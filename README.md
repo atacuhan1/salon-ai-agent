@@ -38,6 +38,9 @@ npm run build
 | Değişken | Kullanım |
 | --- | --- |
 | `OPENAI_API_KEY` | Yoksa kural tabanlı fallback aynı tool’ları çağırır |
+| `OPENAI_MODEL` | Varsayılan `gpt-4o-mini` (en ucuz uygun model) |
+| `OPENAI_MAX_TOKENS` | Cevap tavanı, varsayılan `180` |
+| `OPENAI_HISTORY_LIMIT` | Modele giden son mesaj sayısı, varsayılan `4` |
 | `GOOGLE_CALENDAR_ID`, `GOOGLE_CLIENT_EMAIL`, `GOOGLE_PRIVATE_KEY` | Yoksa bellek içi takvim |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Yoksa bellek içi sohbet geçmişi |
 | `WHATSAPP_VERIFY_TOKEN` | GET webhook handshake |
