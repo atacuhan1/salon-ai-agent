@@ -7,7 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test lib/slots.test.ts lib/timezone.test.ts lib/whatsapp.test.ts lib/calendar.test.ts"
+    "test": "tsx --test lib/slots.test.ts lib/timezone.test.ts lib/whatsapp.test.ts lib/calendar.test.ts lib/fallback-agent.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
