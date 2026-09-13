@@ -67,6 +67,21 @@ export function todayInSalon(): string {
   return formatSalonDate(nowInSalon());
 }
 
+export function formatHumanSalonDate(date: string): string {
+  const instant = salonDateTime(date, "12:00");
+  return new Intl.DateTimeFormat("tr-TR", {
+    timeZone: salonTimeZone(),
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(instant);
+}
+
+export function isPastSalonDate(date: string, today = todayInSalon()): boolean {
+  return date < today;
+}
+
 export function addDaysToSalonDate(date: string, days: number): string {
   const start = salonDateTime(date, "12:00");
   const shifted = new Date(start.getTime() + days * 24 * 60 * 60 * 1000);
