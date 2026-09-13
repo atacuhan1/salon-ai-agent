@@ -22,6 +22,9 @@ const envSchema = z.object({
   SALON_TIMEZONE: z.string().min(1).default("Europe/Istanbul"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   NODE_ENV: z.enum(["development", "test", "production"]).optional(),
+  OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
+  OPENAI_MAX_TOKENS: z.coerce.number().int().min(64).max(1000).default(180),
+  OPENAI_HISTORY_LIMIT: z.coerce.number().int().min(2).max(20).default(4),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
@@ -47,6 +50,9 @@ export function getEnv(): AppEnv {
     SALON_TIMEZONE: process.env.SALON_TIMEZONE,
     LOG_LEVEL: process.env.LOG_LEVEL,
     NODE_ENV: process.env.NODE_ENV,
+    OPENAI_MODEL: process.env.OPENAI_MODEL,
+    OPENAI_MAX_TOKENS: process.env.OPENAI_MAX_TOKENS,
+    OPENAI_HISTORY_LIMIT: process.env.OPENAI_HISTORY_LIMIT,
   });
 
   return cached;

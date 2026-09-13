@@ -3,7 +3,8 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
 import { checkAvailability, createAppointment } from "@/lib/calendar";
 import { getEnv, hasOpenAIConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { SYSTEM_PROMPT } from "@/prompts/salon-rules";
+import { buildSystemPrompt } from "@/prompts/salon-rules";
+import { todayInSalon } from "@/lib/timezone";
 import type { AgentResult, ChatMessage } from "@/lib/types";
 
 const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
@@ -11,19 +12,12 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "checkAvailability",
-      description:
-        "Belirtilen tarihte (YYYY-MM-DD, Europe/Istanbul) salonun boş randevu saatlerini döner.",
+        description: "Boş saatleri döner. date=YYYY-MM-DD.",
       parameters: {
         type: "object",
         properties: {
-          date: {
-            type: "string",
-            description: "Randevu tarihi, YYYY-MM-DD, Europe/Istanbul",
-          },
-          durationMinutes: {
-            type: "number",
-            description: "Hizmet süresi dakika cinsinden",
-          },
+          date: { type: "string" },
+          durationMinutes: { type: "number" },
         },
         required: ["date", "durationMinutes"],
         additionalProperties: false,
@@ -34,19 +28,15 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "createAppointment",
-      description:
-        "Müşteri adı, telefon, hizmet ve başlangıç saatiyle Google Takvim'e randevu yazar.",
+        description: "Randevu yazar. startDateTime=YYYY-MM-DDTHH:mm (Istanbul).",
       parameters: {
         type: "object",
         properties: {
-          customerName: { type: "string", description: "Müşteri adı soyadı" },
-          customerPhone: { type: "string", description: "WhatsApp / telefon" },
-          serviceName: { type: "string", description: "Hizmet adı" },
-          startDateTime: {
-            type: "string",
-            description: "Başlangıç, Europe/Istanbul, YYYY-MM-DDTHH:mm",
-          },
-          durationMinutes: { type: "number", description: "Süre (dakika)" },
+          customerName: { type: "string" },
+          customerPhone: { type: "string" },
+          serviceName: { type: "string" },
+          startDateTime: { type: "string" },
+          durationMinutes: { type: "number" },
         },
         required: [
           "customerName",
@@ -85,7 +75,7 @@ export async function executeTool(
 
   if (name === "checkAvailability") {
     const slots = await checkAvailability(args.date, Number(args.durationMinutes));
-    return { date: args.date, slots };
+    return { date: args.date, slots: slots.slice(0, 12) };
   }
 
   if (name === "createAppointment") {
@@ -101,7 +91,7 @@ export async function executeTool(
   throw new Error(`Unknown tool: ${name}`);
 }
 
-const MAX_TOOL_ROUNDS = 5;
+const MAX_TOOL_ROUNDS = 3;
 
 export async function runOpenAIAgent(
   history: ChatMessage[],
@@ -111,9 +101,10 @@ export async function runOpenAIAgent(
     throw new Error("OpenAI is not configured");
   }
 
+  const env = getEnv();
   const client = getOpenAI();
   const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: buildSystemPrompt(todayInSalon()) },
     ...history.map((message) => ({
       role: message.role,
       content: message.content,
@@ -126,11 +117,12 @@ export async function runOpenAIAgent(
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
       const completion = await client.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: env.OPENAI_MODEL,
         messages,
         tools,
         tool_choice: "auto",
-        temperature: 0.3,
+        temperature: 0.2,
+        max_tokens: env.OPENAI_MAX_TOKENS,
       });
 
       const choice = completion.choices[0]?.message;
