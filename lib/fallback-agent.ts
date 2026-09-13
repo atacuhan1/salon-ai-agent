@@ -47,6 +47,36 @@ export function inferDate(text: string): string | null {
     return `${year}-${month}-${day}`;
   }
 
+  const months: Record<string, string> = {
+    ocak: "01",
+    şubat: "02",
+    subat: "02",
+    mart: "03",
+    nisan: "04",
+    mayıs: "05",
+    mayis: "05",
+    haziran: "06",
+    temmuz: "07",
+    ağustos: "08",
+    agustos: "08",
+    eylül: "09",
+    eylul: "09",
+    ekim: "10",
+    kasım: "11",
+    kasim: "11",
+    aralık: "12",
+    aralik: "12",
+  };
+  const named = lower.match(
+    /\b(\d{1,2})\s+(ocak|şubat|subat|mart|nisan|mayıs|mayis|haziran|temmuz|ağustos|agustos|eylül|eylul|ekim|kasım|kasim|aralık|aralik)(?:\s+(\d{4}))?/,
+  );
+  if (named) {
+    const day = named[1].padStart(2, "0");
+    const month = months[named[2]];
+    const year = named[3] ?? todayInSalon().slice(0, 4);
+    return `${year}-${month}-${day}`;
+  }
+
   if (lower.includes("bugün") || lower.includes("bugun")) {
     return todayInSalon();
   }
@@ -168,6 +198,13 @@ export async function runFallbackAgent(
       `${date}T${time}`,
       service.durationMinutes,
     );
+    if (!result.success) {
+      return {
+        reply: `${result.startDateTime} saati dolu. Başka bir saat ister misiniz? Müsaitlik için tekrar sorabilirsiniz.`,
+        toolCalls,
+        usedFallback: true,
+      };
+    }
     return {
       reply: `Randevunuz alındı. ${service.name}, ${result.startDateTime} – ${result.endDateTime}. ${SALON_NAME}'nde sizi bekliyoruz.`,
       toolCalls,

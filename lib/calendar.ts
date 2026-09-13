@@ -2,8 +2,9 @@ import { google } from "googleapis";
 import { z } from "zod";
 import { getEnv, hasGoogleCalendarConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { generateAvailableSlots, type BusyInterval } from "@/lib/slots";
+import { generateAvailableSlots, overlaps, type BusyInterval } from "@/lib/slots";
 import {
+  formatSalonDate,
   formatSalonDateTime,
   parseStartDateTime,
   salonDateTime,
@@ -132,8 +133,25 @@ export async function createAppointment(
 
   const start = parseStartDateTime(input.startDateTime);
   const end = new Date(start.getTime() + input.durationMinutes * 60 * 1000);
+  const date = formatSalonDate(start);
 
   try {
+    const busy = hasGoogleCalendarConfig()
+      ? await listBusyGoogle(date)
+      : listBusyMemory(date);
+    const conflict = busy.some((interval) => overlaps({ start, end }, interval));
+    if (conflict) {
+      logger.warn("Appointment rejected because the slot is taken", {
+        start: formatSalonDateTime(start),
+      });
+      return {
+        success: false,
+        startDateTime: formatSalonDateTime(start),
+        endDateTime: formatSalonDateTime(end),
+        message: "Bu saat dolu. Lütfen checkAvailability ile başka bir saat seçin.",
+      };
+    }
+
     if (hasGoogleCalendarConfig()) {
       const env = getEnv();
       const calendar = calendarClient();
