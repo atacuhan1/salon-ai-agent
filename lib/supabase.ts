@@ -81,7 +81,8 @@ export async function getConversationHistory(
 
   if (!hasSupabaseConfig()) {
     const rows = memoryStore.get(id) ?? [];
-    return rows.slice(-10).map((row) => ({ role: row.role, content: row.content }));
+    const limit = getEnv().OPENAI_HISTORY_LIMIT;
+    return rows.slice(-limit).map((row) => ({ role: row.role, content: row.content }));
   }
 
   try {
@@ -90,7 +91,7 @@ export async function getConversationHistory(
       .select("role, content, created_at")
       .eq("session_id", id)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(getEnv().OPENAI_HISTORY_LIMIT);
 
     if (error) {
       throw error;
