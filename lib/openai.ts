@@ -3,16 +3,34 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
 import { checkAvailability, createAppointment } from "@/lib/calendar";
 import { getEnv, hasOpenAIConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { buildSystemPrompt } from "@/prompts/salon-rules";
-import { todayInSalon } from "@/lib/timezone";
+import { inferDate } from "@/lib/fallback-agent";
+import { formatHumanSalonDate, isPastSalonDate, todayInSalon } from "@/lib/timezone";
+import { buildSystemPrompt, findService } from "@/prompts/salon-rules";
 import type { AgentResult, ChatMessage } from "@/lib/types";
+
+const TOOL_ROUND_MAX_TOKENS = 500;
+
+export function needsAvailabilityCheck(userMessage: string, history: ChatMessage[]): boolean {
+  const today = todayInSalon();
+  const date = inferDate(userMessage, today);
+  if (date && isPastSalonDate(date, today)) {
+    return false;
+  }
+  const context = `${history.map((message) => message.content).join("\n")}\n${userMessage}`;
+  const service = findService(userMessage) ?? findService(context);
+  const asks =
+    /müsait|musait|saat|randevu|uygun|boş|bos|var mı|var mi/.test(
+      userMessage.toLocaleLowerCase("tr-TR"),
+    ) || Boolean(inferDate(userMessage, today));
+  return Boolean(service && asks);
+}
 
 const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
       name: "checkAvailability",
-        description: "Boş saatleri döner. date=YYYY-MM-DD.",
+      description: "Boş saatleri döner. date=YYYY-MM-DD.",
       parameters: {
         type: "object",
         properties: {
@@ -28,7 +46,7 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "createAppointment",
-        description: "Randevu yazar. startDateTime=YYYY-MM-DDTHH:mm (Istanbul).",
+      description: "Randevu yazar. startDateTime=YYYY-MM-DDTHH:mm (Istanbul).",
       parameters: {
         type: "object",
         properties: {
@@ -103,27 +121,49 @@ export async function runOpenAIAgent(
 
   const env = getEnv();
   const client = getOpenAI();
+  const today = todayInSalon();
+  const resolvedDate = inferDate(userMessage, today);
   const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: buildSystemPrompt(todayInSalon()) },
+    { role: "system", content: buildSystemPrompt(today) },
     ...history.map((message) => ({
       role: message.role,
       content: message.content,
     })),
     { role: "user", content: userMessage },
   ];
+  if (resolvedDate && !isPastSalonDate(resolvedDate, today)) {
+    messages.push({
+      role: "system",
+      content: `Tarih: ${resolvedDate} (${formatHumanSalonDate(resolvedDate)}). checkAvailability date bunu kullan.`,
+    });
+  }
 
   const toolCalls: string[] = [];
+  let forcedAvailability = false;
 
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
+      const forceAvailability =
+        !forcedAvailability &&
+        toolCalls.length === 0 &&
+        needsAvailabilityCheck(userMessage, history);
+
       const completion = await client.chat.completions.create({
         model: env.OPENAI_MODEL,
         messages,
         tools,
-        tool_choice: "auto",
+        tool_choice: forceAvailability
+          ? { type: "function", function: { name: "checkAvailability" } }
+          : "auto",
         temperature: 0.2,
-        max_tokens: env.OPENAI_MAX_TOKENS,
+        max_tokens: forceAvailability || toolCalls.length === 0
+          ? TOOL_ROUND_MAX_TOKENS
+          : env.OPENAI_MAX_TOKENS,
       });
+
+      if (forceAvailability) {
+        forcedAvailability = true;
+      }
 
       const choice = completion.choices[0]?.message;
       if (!choice) {
@@ -132,6 +172,13 @@ export async function runOpenAIAgent(
 
       const calls = choice.tool_calls ?? [];
       if (calls.length === 0) {
+        if (
+          !forcedAvailability &&
+          needsAvailabilityCheck(userMessage, history)
+        ) {
+          forcedAvailability = true;
+          continue;
+        }
         return {
           reply: choice.content?.trim() || "Şu an yanıt üretemedim. Tekrar dener misiniz?",
           toolCalls,

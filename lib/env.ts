@@ -23,7 +23,7 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   NODE_ENV: z.enum(["development", "test", "production"]).optional(),
   OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
-  OPENAI_MAX_TOKENS: z.coerce.number().int().min(64).max(1000).default(180),
+  OPENAI_MAX_TOKENS: z.coerce.number().int().min(64).max(1000).default(220),
   OPENAI_HISTORY_LIMIT: z.coerce.number().int().min(2).max(20).default(4),
 });
 
