@@ -1,4 +1,5 @@
-import { SLOT_STEP_MINUTES, workingHours } from "@/prompts/salon-rules";
+import type { WorkingHours } from "@/lib/types";
+import { SLOT_STEP_MINUTES, workingHours as defaultHours } from "@/prompts/salon-rules";
 import {
   formatSalonTime,
   salonDateTime,
@@ -22,13 +23,14 @@ export function generateAvailableSlots(
   date: string,
   durationMinutes: number,
   busy: BusyInterval[],
+  hoursByDay: WorkingHours = defaultHours,
 ): string[] {
   if (durationMinutes <= 0) {
     throw new Error("durationMinutes must be positive");
   }
 
   const weekday = weekdayInSalon(date);
-  const hours = workingHours[weekday];
+  const hours = hoursByDay[weekday];
   if (!hours) {
     return [];
   }

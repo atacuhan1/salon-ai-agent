@@ -13,6 +13,16 @@ export interface Service {
   keywords: string[];
 }
 
+export interface StaffMember {
+  id: string;
+  name: string;
+  /** 0 = Sunday ... 6 = Saturday. */
+  weekdays: number[];
+  open: string;
+  close: string;
+  active: boolean;
+}
+
 export interface WorkingHours {
   /** 0 = Sunday ... 6 = Saturday. null means closed. */
   [weekday: number]: { open: string; close: string } | null;

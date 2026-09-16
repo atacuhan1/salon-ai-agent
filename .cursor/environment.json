@@ -1,6 +1,20 @@
 {
   "name": "salon-ai-agent",
-  "install": "npm ci",
+  "install": "npm ci && npx prisma generate && DATABASE_URL=file:./dev.db npx prisma db push",
+  "terminals": [
+    {
+      "name": "Next.js dev server",
+      "command": "npm run dev -- --hostname 0.0.0.0 --port 3000",
+      "description": "Next.js App Router development server on port 3000."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 3000
+    }
+  ]
+}
   "terminals": [
     {
       "name": "Next.js dev server",

@@ -1,3 +1,4 @@
+import type { SalonCatalog } from "@/lib/salon-catalog";
 import type { Service, WorkingHours } from "@/lib/types";
 
 export const SALON_NAME = "Bloom Tırnak Atölyesi";
@@ -72,9 +73,9 @@ export const weekdayLabels = [
   "Cumartesi",
 ];
 
-export function findService(text: string): Service | null {
+export function findService(text: string, catalog: Service[] = services): Service | null {
   const lower = text.toLocaleLowerCase("tr-TR");
-  const ranked = services
+  const ranked = catalog
     .map((service) => {
       const hit = service.keywords
         .filter((keyword) => lower.includes(keyword))
@@ -87,8 +88,8 @@ export function findService(text: string): Service | null {
   return ranked[0]?.service ?? null;
 }
 
-function servicesBlurb(): string {
-  return services
+function servicesBlurb(catalog: Service[]): string {
+  return catalog
     .map(
       (service) =>
         `- ${service.name}: ${service.durationMinutes} dk, ${service.priceTry} TL`,
@@ -96,11 +97,31 @@ function servicesBlurb(): string {
     .join("\n");
 }
 
-export function buildSystemPrompt(today: string): string {
-  return `WhatsApp randevu asistanı, ${SALON_NAME}, ${SALON_ADDRESS}. TZ=Europe/Istanbul. Bugün ${today}.
+function hoursBlurb(hours: WorkingHours): string {
+  const compact = [1, 2, 3, 4, 5, 6, 0]
+    .map((weekday) => {
+      const slot = hours[weekday];
+      const label = weekdayLabels[weekday].slice(0, 3);
+      return slot ? `${label} ${slot.open}–${slot.close}` : `${label} kapalı`;
+    })
+    .join(", ");
+  return compact;
+}
+
+export function buildSystemPrompt(today: string, catalog?: SalonCatalog): string {
+  const name = catalog?.name ?? SALON_NAME;
+  const address = catalog?.address || SALON_ADDRESS;
+  const list = catalog?.services?.length ? catalog.services : services;
+  const hours = catalog?.workingHours ?? workingHours;
+  const staff =
+    catalog?.staff?.filter((member) => member.active).map((member) => member.name).join(", ") ||
+    "";
+  const staffLine = staff ? `Çalışanlar: ${staff}.` : "";
+  return `WhatsApp randevu asistanı, ${name}, ${address}. TZ=Europe/Istanbul. Bugün ${today}.
 Hizmetler:
-${servicesBlurb()}
-Saatler: Pzt–Per 10–19, Cuma 10–20, Cmt 10–18, Pazar kapalı.
+${servicesBlurb(list)}
+Saatler: ${hoursBlurb(hours)}.
+${staffLine}
 Sadece fiyat, müsaitlik, randevu. Tıp/işlem tavsiyesi yok. Fiyat uydurma.
 Gün/saat sorulunca checkAvailability çağır, saat uydurma. Geçmiş günü reddet.
 Randevu=createAppointment (ad, tel, hizmet, YYYY-MM-DDTHH:mm). Eksik bilgi sor.
