@@ -9,7 +9,7 @@ WhatsApp üzerinden butik tırnak / güzellik salonları için randevu alan AI a
 - Google Calendar, Supabase, Meta WhatsApp (anahtar yoksa mock)
 - Postgres + Prisma (salon kaydı yayında kalır; SQLite yok)
 
-Zaman dilimi her yerde **Europe/Istanbul (UTC+3)**.
+Zaman dilimi her yerde **Europe/Istanbul (UTC+3)**. Yol haritası: [TODO.md](TODO.md).
 
 ## Geliştirme
 
