@@ -1,49 +1,74 @@
-import { ChatPanel } from "@/app/chat-panel";
-import { SALON_ADDRESS, SALON_NAME, SALON_PHONE, services } from "@/prompts/salon-rules";
+import Link from "next/link";
+
+const features = [
+  {
+    title: "Hizmet ve ücret",
+    body: "Protez, kalıcı oje, bakımlar… hangisini verdiğinizi ve kaç TL olduğunu siz yazarsınız. Asistan uydurmaz.",
+  },
+  {
+    title: "Çalışan ve günler",
+    body: "Kim hangi gün çalışıyor, kaça kadar açık? Salon saatlerini ve personeli panelden değiştirin.",
+  },
+  {
+    title: "Abonelik kilidi",
+    body: "Ödeme yoksa müşteri sohbeti kapanır. Deneme 14 gün; sonra yalnızca ödeyen salonlar açık kalır.",
+  },
+];
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 py-8 md:flex-row md:items-start md:px-8">
-      <section className="md:w-5/12">
-        <p className="text-sm tracking-[0.28em] uppercase text-[#8e4b56]">
-          WhatsApp randevu asistanı
-        </p>
-        <h1 className="mt-3 text-5xl leading-tight font-semibold md:text-6xl">
-          {SALON_NAME}
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-4 py-10 md:px-8">
+      <header className="flex items-center justify-between gap-4">
+        <p className="text-sm tracking-[0.28em] uppercase text-[#8e4b56]">Salon AI</p>
+        <nav className="flex gap-3 text-sm">
+          <Link href="/giris" className="rounded-full border border-[#eadfd6] px-4 py-2">
+            Giriş
+          </Link>
+          <Link
+            href="/kayit"
+            className="rounded-full bg-[#8e4b56] px-4 py-2 text-white"
+          >
+            14 gün dene
+          </Link>
+        </nav>
+      </header>
+
+      <section className="max-w-3xl">
+        <h1 className="text-5xl leading-tight font-semibold md:text-6xl">
+          Her salon kendi saatini, personelini ve fiyatını girsin.
         </h1>
-        <p className="mt-4 max-w-md text-lg leading-relaxed text-[#5a4144]">
-          Protez tırnak, kalıcı oje ve bakım randevularını otomatik alır.
-          Asistan yalnızca fiyat, müsaitlik ve onay konuşur.
+        <p className="mt-5 max-w-xl text-lg leading-relaxed text-[#5a4144]">
+          Siz her müşteri için kod yazmazsınız. Salon sahibi basit panelden
+          ayarlar; müşterileri WhatsApp asistanından randevu alır. Abonelik
+          bitince erişim kesilir.
         </p>
-        <dl className="mt-8 space-y-2 text-[#5a4144]">
-          <div>
-            <dt className="text-xs tracking-widest uppercase">Adres</dt>
-            <dd>{SALON_ADDRESS}</dd>
-          </div>
-          <div>
-            <dt className="text-xs tracking-widest uppercase">Telefon</dt>
-            <dd>{SALON_PHONE}</dd>
-          </div>
-          <div>
-            <dt className="text-xs tracking-widest uppercase">Saat dilimi</dt>
-            <dd>Europe/Istanbul (UTC+3)</dd>
-          </div>
-        </dl>
-        <ul className="mt-8 space-y-2 text-sm text-[#5a4144]">
-          {services.map((service) => (
-            <li
-              key={service.id}
-              className="flex items-baseline justify-between border-b border-[#e4d0c6] py-2"
-            >
-              <span>{service.name}</span>
-              <span>
-                {service.durationMinutes} dk · {service.priceTry} TL
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/kayit"
+            className="rounded-full bg-[#8e4b56] px-6 py-3 text-sm tracking-wide text-white uppercase"
+          >
+            Salon kaydı
+          </Link>
+          <Link
+            href="/demo"
+            className="rounded-full border border-[#eadfd6] px-6 py-3 text-sm"
+          >
+            Örnek sohbeti gör
+          </Link>
+        </div>
       </section>
-      <ChatPanel />
+
+      <section className="grid gap-4 md:grid-cols-3">
+        {features.map((feature) => (
+          <article
+            key={feature.title}
+            className="rounded-3xl border border-[#eadfd6] bg-[#fffaf6] p-6"
+          >
+            <h2 className="text-2xl font-semibold">{feature.title}</h2>
+            <p className="mt-3 leading-relaxed text-[#5a4144]">{feature.body}</p>
+          </article>
+        ))}
+      </section>
     </main>
   );
 }

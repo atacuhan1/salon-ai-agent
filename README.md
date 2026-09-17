@@ -1,13 +1,13 @@
 # salon-ai-agent
 
-WhatsApp üzerinden butik tırnak / güzellik salonları için randevu alan AI asistanı.
+WhatsApp üzerinden butik tırnak / güzellik salonları için randevu alan AI asistanı. Salon sahipleri hizmet, fiyat, personel ve çalışma saatlerini panelden girer. Abonelik yoksa asistan kapanır.
 
 - Next.js 15 App Router + TypeScript
 - OpenAI `gpt-4o-mini` function calling (`checkAvailability`, `createAppointment`)
-- Google Calendar (service account)
-- Supabase sohbet geçmişi
-- Meta WhatsApp Cloud API webhook
-- Anahtar yokken in-memory mock’lar; yerel test sohbeti `/` üzerinden çalışır
+- Salon paneli: `/kayit`, `/giris`, `/panel`
+- Müşteri sohbeti: `/s/<salon-slug>` (abonelik kilitliyse 402)
+- Google Calendar, Supabase, Meta WhatsApp (anahtar yoksa mock)
+- SQLite + Prisma (yerel; Postgres’e taşınabilir)
 
 Zaman dilimi her yerde **Europe/Istanbul (UTC+3)**.
 
@@ -16,13 +16,18 @@ Zaman dilimi her yerde **Europe/Istanbul (UTC+3)**.
 ```bash
 cp .env.example .env.local
 npm ci
+npx prisma db push
 npm run dev
 ```
 
 - Uygulama: http://localhost:3000
+- Salon kaydı: `/kayit` (14 gün deneme)
+- Panel: `/panel` (hizmet, çalışan, saat, abonelik)
+- Örnek sohbet: `/demo`
+- Müşteri sohbeti: `/s/<slug>`
 - Sağlık: `GET /api/health`
 - Sabit mesajlı tool testi: `GET /api/test-chat`
-- Sohbet: `POST /api/chat` `{ "sessionId": "90555…", "message": "…" }`
+- Sohbet: `POST /api/chat` `{ "sessionId": "90555…", "message": "…", "salonSlug": "opsiyonel" }`
 - WhatsApp doğrulama: `GET /api/webhook?hub.mode=subscribe&hub.verify_token=salon-dev-verify&hub.challenge=123`
 
 ```bash
@@ -47,6 +52,10 @@ npm run build
 | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Yanıt gönderme |
 | `WHATSAPP_APP_SECRET` | `X-Hub-Signature-256` doğrulama |
 | `SALON_TIMEZONE` | `Europe/Istanbul` |
+| `DATABASE_URL` | SQLite; Prisma CLI için `file:./dev.db` (schema klasörüne göre) |
+| `AUTH_SECRET` | Panel oturum çerezi |
+
+Ödeme henüz Stripe değil; panelde **ödemeyi simüle et** 30 gün açar, **iptal** müşteri sohbetini kilitler.
 
 `GOOGLE_PRIVATE_KEY` değerindeki `\n` karakterleri env içinde escaped olabilir; kod bunları çözer. JSON key dosyasını repo’ya koymayın.
 
@@ -89,12 +98,15 @@ Env’leri Vercel projesine ekleyin. Webhook URL’si production domain olmalıd
 ## Klasörler
 
 ```
+app/panel/
+app/s/[slug]/page.tsx
 app/api/webhook/route.ts
 app/api/chat/route.ts
 app/api/test-chat/route.ts
 lib/calendar.ts
 lib/openai.ts
-lib/supabase.ts
-lib/whatsapp.ts
+lib/salon-store.ts
+lib/subscription.ts
 prompts/salon-rules.ts
+prisma/schema.prisma
 ```

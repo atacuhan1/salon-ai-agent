@@ -1,5 +1,6 @@
 import { checkAvailability, createAppointment } from "@/lib/calendar";
 import { logger } from "@/lib/logger";
+import { defaultCatalog, type SalonCatalog } from "@/lib/salon-catalog";
 import {
   addDaysToSalonDate,
   formatHumanSalonDate,
@@ -7,8 +8,8 @@ import {
   todayInSalon,
   weekdayInSalon,
 } from "@/lib/timezone";
-import type { AgentResult, ChatMessage } from "@/lib/types";
-import { SALON_NAME, findService, services, weekdayLabels, workingHours } from "@/prompts/salon-rules";
+import type { AgentResult, ChatMessage, Service } from "@/lib/types";
+import { findService, weekdayLabels } from "@/prompts/salon-rules";
 
 const weekdayEntries = [
   ["pazartesi", 1],
@@ -223,22 +224,21 @@ function looksLikeDateFollowup(text: string, date: string | null): boolean {
   return words <= 6 && !looksLikeBooking(text);
 }
 
-function serviceList(): string {
-  return services
+function serviceList(catalog: SalonCatalog): string {
+  return catalog.services
     .map((service) => `• ${service.name} — ${service.durationMinutes} dk / ${service.priceTry} TL`)
     .join("\n");
 }
 
 async function availabilityReply(
   date: string,
-  serviceName: string,
-  durationMinutes: number,
-  priceTry: number,
+  service: Service,
   toolCalls: string[],
+  catalog: SalonCatalog,
 ): Promise<AgentResult> {
   const human = formatHumanSalonDate(date);
   const weekday = weekdayInSalon(date);
-  if (!workingHours[weekday]) {
+  if (!catalog.workingHours[weekday]) {
     return {
       reply: `${human} günü salon kapalı (${weekdayLabels[weekday]}). Başka bir gün söyleyin.`,
       toolCalls,
@@ -247,17 +247,20 @@ async function availabilityReply(
   }
 
   toolCalls.push("checkAvailability");
-  logger.info("Fallback calling checkAvailability", { date, durationMinutes });
-  const slots = await checkAvailability(date, durationMinutes);
+  logger.info("Fallback calling checkAvailability", { date, durationMinutes: service.durationMinutes });
+  const slots = await checkAvailability(date, service.durationMinutes, {
+    salonKey: catalog.id,
+    hours: catalog.workingHours,
+  });
   if (slots.length === 0) {
     return {
-      reply: `${human} tarihinde ${serviceName} için uygun saat kalmadı. Başka bir gün dener misiniz?`,
+      reply: `${human} tarihinde ${service.name} için uygun saat kalmadı. Başka bir gün dener misiniz?`,
       toolCalls,
       usedFallback: true,
     };
   }
   return {
-    reply: `${human} için ${serviceName} (${durationMinutes} dk, ${priceTry} TL) müsait saatler: ${slots.join(", ")}.\nİstediğiniz saati, adınızı ve telefonunuzu yazmanız yeterli.`,
+    reply: `${human} için ${service.name} (${service.durationMinutes} dk, ${service.priceTry} TL) müsait saatler: ${slots.join(", ")}.\nİstediğiniz saati, adınızı ve telefonunuzu yazmanız yeterli.`,
     toolCalls,
     usedFallback: true,
   };
@@ -267,6 +270,7 @@ export async function runFallbackAgent(
   history: ChatMessage[],
   userMessage: string,
   sessionId: string,
+  catalog: SalonCatalog = defaultCatalog,
 ): Promise<AgentResult> {
   const toolCalls: string[] = [];
   const today = todayInSalon();
@@ -274,7 +278,8 @@ export async function runFallbackAgent(
     .filter((message) => message.role === "user")
     .map((message) => message.content)
     .join("\n");
-  const service = findService(userMessage) ?? findService(historyText);
+  const service =
+    findService(userMessage, catalog.services) ?? findService(historyText, catalog.services);
 
   if (looksLikeMedical(userMessage)) {
     return {
@@ -287,7 +292,7 @@ export async function runFallbackAgent(
 
   if (/hizmet|fiyat|liste|neler var|menü|menu/.test(userMessage.toLocaleLowerCase("tr-TR"))) {
     return {
-      reply: `${SALON_NAME} hizmetleri:\n${serviceList()}\n\nHangi gün için bakmamı istersiniz?`,
+      reply: `${catalog.name} hizmetleri:\n${serviceList(catalog)}\n\nHangi gün için bakmamı istersiniz?`,
       toolCalls,
       usedFallback: true,
     };
@@ -323,6 +328,7 @@ export async function runFallbackAgent(
       service.name,
       `${date}T${time}`,
       service.durationMinutes,
+      { salonKey: catalog.id, hours: catalog.workingHours },
     );
     if (!result.success) {
       return {
@@ -332,7 +338,7 @@ export async function runFallbackAgent(
       };
     }
     return {
-      reply: `Randevunuz alındı. ${service.name}, ${result.startDateTime} – ${result.endDateTime}. ${SALON_NAME}'nde sizi bekliyoruz.`,
+      reply: `Randevunuz alındı. ${service.name}, ${result.startDateTime} – ${result.endDateTime}. ${catalog.name}'nde sizi bekliyoruz.`,
       toolCalls,
       usedFallback: true,
     };
@@ -343,18 +349,15 @@ export async function runFallbackAgent(
     date &&
     (looksLikeAvailability(userMessage) || looksLikeDateFollowup(userMessage, dateFromThisMessage))
   ) {
-    return availabilityReply(
-      dateFromThisMessage ?? date,
-      service.name,
-      service.durationMinutes,
-      service.priceTry,
-      toolCalls,
-    );
+    return availabilityReply(dateFromThisMessage ?? date, service, toolCalls, catalog);
   }
 
   if (dateFromThisMessage && !service) {
     return {
-      reply: `${formatHumanSalonDate(dateFromThisMessage)} için hangi hizmete bakayım? Protez tırnak, kalıcı oje, manikür veya pedikür.`,
+      reply: `${formatHumanSalonDate(dateFromThisMessage)} için hangi hizmete bakayım? ${catalog.services
+        .slice(0, 4)
+        .map((item) => item.name)
+        .join(", ") || "Hizmet listesinden birini söyleyin"}.`,
       toolCalls,
       usedFallback: true,
     };
@@ -370,7 +373,7 @@ export async function runFallbackAgent(
   }
 
   return {
-    reply: `Merhaba, ${SALON_NAME} randevu asistanıyım. Hangi gün ve hizmet için bakmamı istersiniz? Örnek: "Yarın protez tırnak" veya "haftaya salı kalıcı oje".`,
+    reply: `Merhaba, ${catalog.name} randevu asistanıyım. Hangi gün ve hizmet için bakmamı istersiniz? Örnek: "Yarın ${catalog.services[0]?.name ?? "hizmet"}".`,
     toolCalls,
     usedFallback: true,
   };
