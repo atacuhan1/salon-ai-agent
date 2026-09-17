@@ -7,7 +7,7 @@ WhatsApp üzerinden butik tırnak / güzellik salonları için randevu alan AI a
 - Salon paneli: `/kayit`, `/giris`, `/panel`
 - Müşteri sohbeti: `/s/<salon-slug>` (abonelik kilitliyse 402)
 - Google Calendar, Supabase, Meta WhatsApp (anahtar yoksa mock)
-- SQLite + Prisma (yerel; Postgres’e taşınabilir)
+- Postgres + Prisma (salon kaydı yayında kalır; SQLite yok)
 
 Zaman dilimi her yerde **Europe/Istanbul (UTC+3)**.
 
@@ -16,7 +16,8 @@ Zaman dilimi her yerde **Europe/Istanbul (UTC+3)**.
 ```bash
 cp .env.example .env.local
 npm ci
-npx prisma db push
+npm run db:up
+npx prisma migrate deploy
 npm run dev
 ```
 
@@ -52,7 +53,7 @@ npm run build
 | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Yanıt gönderme |
 | `WHATSAPP_APP_SECRET` | `X-Hub-Signature-256` doğrulama |
 | `SALON_TIMEZONE` | `Europe/Istanbul` |
-| `DATABASE_URL` | SQLite; Prisma CLI için `file:./dev.db` (schema klasörüne göre) |
+| `DATABASE_URL` | Postgres bağlantısı (`postgresql://...`). SQLite desteklenmez |
 | `AUTH_SECRET` | Panel oturum çerezi |
 
 Ödeme henüz Stripe değil; panelde **ödemeyi simüle et** 30 gün açar, **iptal** müşteri sohbetini kilitler.
@@ -93,6 +94,17 @@ Meta App Dashboard → WhatsApp → Configuration:
 
 ## Vercel
 
+1. Neon, Supabase veya Vercel Postgres’te bir veritabanı açın.
+2. `DATABASE_URL` (gerekirse pooler) ve `AUTH_SECRET` env’lerini ekleyin. Pooler kullanıyorsanız migrate için unpooled URL’yi build’de `DATABASE_URL` yapın veya `prisma migrate deploy`’u doğrudan bağlantı ile çalıştırın.
+3. Deploy. `vercel.json` build sırasında `prisma migrate deploy` çalıştırır; tablolar oluşur, salon kayıtları diskte değil Postgres’te kalır.
+
+Yerel Docker:
+
+```bash
+docker compose up -d
+npx prisma migrate deploy
+```
+
 Env’leri Vercel projesine ekleyin. Webhook URL’si production domain olmalıdır. Gereksiz debug log’u yoktur; `LOG_LEVEL=info|warn|error`.
 
 ## Klasörler
@@ -108,5 +120,5 @@ lib/openai.ts
 lib/salon-store.ts
 lib/subscription.ts
 prompts/salon-rules.ts
-prisma/schema.prisma
+prisma/migrations/
 ```
