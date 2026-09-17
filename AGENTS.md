@@ -17,3 +17,13 @@ git push -u origin backup --force-with-lease
 ```
 
 Yeni merge `backup`’ın üstüne yazılmaz; `backup` bir önceki `main` olarak kalır. Bir sonraki merge öncesi tekrar güncellenir. Acil dönüş: `backup`’ı `main`’e al veya o commit’ten hotfix aç.
+
+## Unused branches
+
+GitHub’da `main` ve `backup` dışındaki kullanılmayan dalları sil. `backup` **asla** silinmez, `main` de silinmez.
+
+Kullanılmayan: açık PR’ı yok, `main`/`backup` değil (squash-merge olmuş `cursor/*` iş dalları dahil). Merge sonrası feature dalını da sil (`gh pr merge --squash --delete-branch`).
+
+```bash
+git push origin --delete <branch>
+```
