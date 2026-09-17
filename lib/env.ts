@@ -25,6 +25,8 @@ const envSchema = z.object({
   OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
   OPENAI_MAX_TOKENS: z.coerce.number().int().min(64).max(1000).default(220),
   OPENAI_HISTORY_LIMIT: z.coerce.number().int().min(2).max(20).default(4),
+  AUTH_SECRET: optionalString,
+  DATABASE_URL: optionalString,
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
@@ -53,6 +55,8 @@ export function getEnv(): AppEnv {
     OPENAI_MODEL: process.env.OPENAI_MODEL,
     OPENAI_MAX_TOKENS: process.env.OPENAI_MAX_TOKENS,
     OPENAI_HISTORY_LIMIT: process.env.OPENAI_HISTORY_LIMIT,
+    AUTH_SECRET: process.env.AUTH_SECRET,
+    DATABASE_URL: process.env.DATABASE_URL,
   });
 
   return cached;

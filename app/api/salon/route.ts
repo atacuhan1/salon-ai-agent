@@ -1,0 +1,63 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { errorResponse, requireOwner } from "@/lib/api-guard";
+import { prisma } from "@/lib/db";
+import { logger } from "@/lib/logger";
+import { slugify } from "@/lib/slug";
+import { uniqueSlug } from "@/lib/salon-store";
+
+const updateSchema = z.object({
+  name: z.string().trim().min(2).max(80).optional(),
+  phone: z.string().trim().max(30).optional(),
+  address: z.string().trim().max(160).optional(),
+  slug: z.string().trim().max(40).optional(),
+});
+
+export async function GET() {
+  try {
+    const { salon, access } = await requireOwner({ allowExpired: true });
+    return NextResponse.json({
+      salon: {
+        id: salon.id,
+        name: salon.name,
+        slug: salon.slug,
+        email: salon.email,
+        phone: salon.phone,
+        address: salon.address,
+      },
+      access,
+    });
+  } catch (error) {
+    return errorResponse(error) ?? NextResponse.json({ error: "Salon okunamadı." }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const { salon } = await requireOwner();
+    const body = updateSchema.parse(await request.json());
+    const slug = body.slug
+      ? await uniqueSlug(slugify(body.slug), salon.id)
+      : undefined;
+    const updated = await prisma.salon.update({
+      where: { id: salon.id },
+      data: {
+        name: body.name,
+        phone: body.phone,
+        address: body.address,
+        slug,
+      },
+    });
+    return NextResponse.json({ ok: true, slug: updated.slug });
+  } catch (error) {
+    logger.error("PUT /api/salon failed", {
+      error: error instanceof Error ? error.message : "unknown",
+    });
+    return (
+      errorResponse(error) ??
+      (error instanceof z.ZodError
+        ? NextResponse.json({ error: "Geçersiz salon bilgisi." }, { status: 400 })
+        : NextResponse.json({ error: "Güncellenemedi." }, { status: 500 }))
+    );
+  }
+}

@@ -8,21 +8,34 @@ interface UiMessage {
   tools?: string[];
 }
 
-const SUGGESTIONS = [
+const DEFAULT_SUGGESTIONS = [
   "Hizmetler ve fiyatlar neler?",
-  "Yarın protez tırnak için müsait misiniz?",
-  "Kalıcı oje ne kadar sürüyor?",
+  "Yarın için müsait misiniz?",
+  "Bu hafta hangi günler açıksınız?",
 ];
 
-export function ChatPanel() {
+export function ChatPanel({
+  salonName = "Bloom Tırnak Atölyesi",
+  salonSlug,
+  locked = false,
+  lockMessage,
+  suggestions = DEFAULT_SUGGESTIONS,
+}: {
+  salonName?: string;
+  salonSlug?: string;
+  locked?: boolean;
+  lockMessage?: string;
+  suggestions?: string[];
+}) {
   const [sessionId, setSessionId] = useState("905551234567");
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [messages, setMessages] = useState<UiMessage[]>([
     {
       role: "assistant",
-      content:
-        "Merhaba, Bloom Tırnak Atölyesi randevu asistanıyım. Hizmet, fiyat veya müsait saat sorabilirsiniz.",
+      content: locked
+        ? lockMessage || "Bu salonun aboneliği aktif değil."
+        : `Merhaba, ${salonName} randevu asistanıyım. Hizmet, fiyat veya müsait saat sorabilirsiniz.`,
     },
   ]);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -33,7 +46,7 @@ export function ChatPanel() {
 
   async function send(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || pending) {
+    if (!trimmed || pending || locked) {
       return;
     }
 
@@ -45,7 +58,7 @@ export function ChatPanel() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, message: trimmed }),
+        body: JSON.stringify({ sessionId, message: trimmed, salonSlug }),
       });
       const data = (await response.json()) as {
         reply?: string;
@@ -85,9 +98,11 @@ export function ChatPanel() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm tracking-[0.2em] uppercase text-[#8e4b56]">
-              Test sohbeti
+              {salonSlug ? salonName : "Test sohbeti"}
             </p>
-            <p className="text-xl font-medium">WhatsApp olmadan dene</p>
+            <p className="text-xl font-medium">
+              {locked ? "Asistan kapalı" : "WhatsApp olmadan dene"}
+            </p>
           </div>
           <label className="text-xs text-[#8e4b56]">
             session_id
@@ -125,12 +140,13 @@ export function ChatPanel() {
       </div>
 
       <div className="flex flex-wrap gap-2 px-5 pb-3">
-        {SUGGESTIONS.map((suggestion) => (
+        {suggestions.map((suggestion) => (
           <button
             key={suggestion}
             type="button"
+            disabled={locked}
             onClick={() => send(suggestion)}
-            className="rounded-full border border-[#eadfd6] px-3 py-1 text-sm text-[#5a4144] hover:border-[#b76e79]"
+            className="rounded-full border border-[#eadfd6] px-3 py-1 text-sm text-[#5a4144] hover:border-[#b76e79] disabled:opacity-40"
           >
             {suggestion}
           </button>
@@ -147,12 +163,13 @@ export function ChatPanel() {
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="Örn. Yarın protez tırnak için müsait misiniz?"
-          className="flex-1 rounded-full border border-[#eadfd6] bg-white px-4 py-3 text-[#3b2a2c] outline-none focus:border-[#b76e79]"
+          disabled={locked}
+          placeholder="Örn. Yarın için müsait misiniz?"
+          className="flex-1 rounded-full border border-[#eadfd6] bg-white px-4 py-3 text-[#3b2a2c] outline-none focus:border-[#b76e79] disabled:opacity-50"
         />
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || locked}
           className="rounded-full bg-[#8e4b56] px-5 py-3 text-sm tracking-wide text-white uppercase disabled:opacity-50"
         >
           Gönder

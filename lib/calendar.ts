@@ -10,7 +10,7 @@ import {
   salonDateTime,
   toIsoInSalon,
 } from "@/lib/timezone";
-import type { CreateAppointmentResult } from "@/lib/types";
+import type { CreateAppointmentResult, WorkingHours } from "@/lib/types";
 
 const checkAvailabilityInput = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -28,7 +28,22 @@ const createAppointmentInput = z.object({
 export type CheckAvailabilityInput = z.infer<typeof checkAvailabilityInput>;
 export type CreateAppointmentInput = z.infer<typeof createAppointmentInput>;
 
-const memoryBusy: BusyInterval[] = [];
+export type CalendarOptions = {
+  salonKey?: string;
+  hours?: WorkingHours;
+};
+
+const memoryBusyBySalon = new Map<string, BusyInterval[]>();
+
+function salonBusy(salonKey: string): BusyInterval[] {
+  const existing = memoryBusyBySalon.get(salonKey);
+  if (existing) {
+    return existing;
+  }
+  const created: BusyInterval[] = [];
+  memoryBusyBySalon.set(salonKey, created);
+  return created;
+}
 
 function getJwtClient() {
   const env = getEnv();
@@ -81,25 +96,32 @@ async function listBusyGoogle(date: string): Promise<BusyInterval[]> {
   }
 }
 
-function listBusyMemory(date: string): BusyInterval[] {
+function listBusyMemory(date: string, salonKey: string): BusyInterval[] {
   const dayStart = salonDateTime(date, "00:00");
   const dayEnd = salonDateTime(date, "23:59");
-  return memoryBusy.filter((interval) =>
-    interval.start < dayEnd && interval.end > dayStart,
+  return salonBusy(salonKey).filter(
+    (interval) => interval.start < dayEnd && interval.end > dayStart,
   );
 }
 
 export async function checkAvailability(
   date: string,
   durationMinutes: number,
+  options: CalendarOptions = {},
 ): Promise<string[]> {
   const input = checkAvailabilityInput.parse({ date, durationMinutes });
+  const salonKey = options.salonKey ?? "demo";
 
   try {
     const busy = hasGoogleCalendarConfig()
       ? await listBusyGoogle(input.date)
-      : listBusyMemory(input.date);
-    const slots = generateAvailableSlots(input.date, input.durationMinutes, busy);
+      : listBusyMemory(input.date, salonKey);
+    const slots = generateAvailableSlots(
+      input.date,
+      input.durationMinutes,
+      busy,
+      options.hours,
+    );
     logger.info("Checked availability", {
       date: input.date,
       durationMinutes: input.durationMinutes,
@@ -122,6 +144,7 @@ export async function createAppointment(
   serviceName: string,
   startDateTime: string,
   durationMinutes: number,
+  options: CalendarOptions = {},
 ): Promise<CreateAppointmentResult> {
   const input = createAppointmentInput.parse({
     customerName,
@@ -130,6 +153,7 @@ export async function createAppointment(
     startDateTime,
     durationMinutes,
   });
+  const salonKey = options.salonKey ?? "demo";
 
   const start = parseStartDateTime(input.startDateTime);
   const end = new Date(start.getTime() + input.durationMinutes * 60 * 1000);
@@ -138,7 +162,7 @@ export async function createAppointment(
   try {
     const busy = hasGoogleCalendarConfig()
       ? await listBusyGoogle(date)
-      : listBusyMemory(date);
+      : listBusyMemory(date, salonKey);
     const conflict = busy.some((interval) => overlaps({ start, end }, interval));
     if (conflict) {
       logger.warn("Appointment rejected because the slot is taken", {
@@ -182,7 +206,7 @@ export async function createAppointment(
       };
     }
 
-    memoryBusy.push({ start, end });
+    salonBusy(salonKey).push({ start, end });
     const eventId = `mem_${start.getTime()}`;
     logger.info("Created in-memory appointment", { eventId });
     return {

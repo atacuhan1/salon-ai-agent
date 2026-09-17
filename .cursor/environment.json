@@ -1,6 +1,6 @@
 {
   "name": "salon-ai-agent",
-  "install": "npm ci",
+  "install": "npm ci && npx prisma generate && DATABASE_URL=file:./dev.db npx prisma db push",
   "terminals": [
     {
       "name": "Next.js dev server",

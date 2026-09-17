@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { inferDate, runFallbackAgent } from "@/lib/fallback-agent";
+import { formatHumanSalonDate } from "@/lib/timezone";
 
 const sunday = "2026-09-13";
 
@@ -42,6 +43,8 @@ test("follow-up Dün does not reuse yarın slots", async () => {
 });
 
 test("follow-up haftaya salı uses that Tuesday", async () => {
+  const expected = inferDate("haftaya salı");
+  assert.ok(expected);
   const result = await runFallbackAgent(
     [
       { role: "user", content: "Yarın protez tırnak için müsait misiniz?" },
@@ -51,6 +54,6 @@ test("follow-up haftaya salı uses that Tuesday", async () => {
     "test-salı",
   );
   assert.ok(result.toolCalls.includes("checkAvailability"));
-  assert.match(result.reply, /15 Eylül|15 Eylül 2026/i);
+  assert.ok(result.reply.includes(formatHumanSalonDate(expected)));
   assert.doesNotMatch(result.reply, /14 Eylül 2026/);
 });

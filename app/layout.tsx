@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bloom Tırnak Atölyesi — Randevu Asistanı",
+  title: "Salon AI — Randevu asistanı",
   description:
-    "Boutique tırnak salonu için WhatsApp randevu asistanı. Fiyat, müsaitlik ve rezervasyon.",
+    "Salon sahipleri hizmet, fiyat, personel ve saatlerini panelden girer. Abonelik bitince asistan kapanır.",
 };
 
 export default function RootLayout({

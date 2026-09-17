@@ -4,20 +4,26 @@ import { checkAvailability, createAppointment } from "@/lib/calendar";
 import { getEnv, hasOpenAIConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { inferDate } from "@/lib/fallback-agent";
+import { defaultCatalog, type SalonCatalog } from "@/lib/salon-catalog";
 import { formatHumanSalonDate, isPastSalonDate, todayInSalon } from "@/lib/timezone";
 import { buildSystemPrompt, findService } from "@/prompts/salon-rules";
 import type { AgentResult, ChatMessage } from "@/lib/types";
 
 const TOOL_ROUND_MAX_TOKENS = 500;
 
-export function needsAvailabilityCheck(userMessage: string, history: ChatMessage[]): boolean {
+export function needsAvailabilityCheck(
+  userMessage: string,
+  history: ChatMessage[],
+  catalog: SalonCatalog = defaultCatalog,
+): boolean {
   const today = todayInSalon();
   const date = inferDate(userMessage, today);
   if (date && isPastSalonDate(date, today)) {
     return false;
   }
   const context = `${history.map((message) => message.content).join("\n")}\n${userMessage}`;
-  const service = findService(userMessage) ?? findService(context);
+  const service =
+    findService(userMessage, catalog.services) ?? findService(context, catalog.services);
   const asks =
     /müsait|musait|saat|randevu|uygun|boş|bos|var mı|var mi/.test(
       userMessage.toLocaleLowerCase("tr-TR"),
@@ -88,11 +94,17 @@ function getOpenAI(): OpenAI {
 export async function executeTool(
   name: string,
   rawArgs: string,
+  catalog: SalonCatalog = defaultCatalog,
 ): Promise<unknown> {
   const args = rawArgs ? JSON.parse(rawArgs) : {};
+  const calendar = { salonKey: catalog.id, hours: catalog.workingHours };
 
   if (name === "checkAvailability") {
-    const slots = await checkAvailability(args.date, Number(args.durationMinutes));
+    const slots = await checkAvailability(
+      args.date,
+      Number(args.durationMinutes),
+      calendar,
+    );
     return { date: args.date, slots: slots.slice(0, 12) };
   }
 
@@ -103,6 +115,7 @@ export async function executeTool(
       args.serviceName,
       args.startDateTime,
       Number(args.durationMinutes),
+      calendar,
     );
   }
 
@@ -114,6 +127,7 @@ const MAX_TOOL_ROUNDS = 3;
 export async function runOpenAIAgent(
   history: ChatMessage[],
   userMessage: string,
+  catalog: SalonCatalog = defaultCatalog,
 ): Promise<AgentResult> {
   if (!hasOpenAIConfig()) {
     throw new Error("OpenAI is not configured");
@@ -124,7 +138,7 @@ export async function runOpenAIAgent(
   const today = todayInSalon();
   const resolvedDate = inferDate(userMessage, today);
   const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: buildSystemPrompt(today) },
+    { role: "system", content: buildSystemPrompt(today, catalog) },
     ...history.map((message) => ({
       role: message.role,
       content: message.content,
@@ -146,7 +160,7 @@ export async function runOpenAIAgent(
       const forceAvailability =
         !forcedAvailability &&
         toolCalls.length === 0 &&
-        needsAvailabilityCheck(userMessage, history);
+        needsAvailabilityCheck(userMessage, history, catalog);
 
       const completion = await client.chat.completions.create({
         model: env.OPENAI_MODEL,
@@ -174,7 +188,7 @@ export async function runOpenAIAgent(
       if (calls.length === 0) {
         if (
           !forcedAvailability &&
-          needsAvailabilityCheck(userMessage, history)
+          needsAvailabilityCheck(userMessage, history, catalog)
         ) {
           forcedAvailability = true;
           continue;
@@ -197,6 +211,7 @@ export async function runOpenAIAgent(
           const result = await executeTool(
             call.function.name,
             call.function.arguments,
+            catalog,
           );
           messages.push({
             role: "tool",
