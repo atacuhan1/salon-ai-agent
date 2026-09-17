@@ -1,6 +1,7 @@
 {
   "name": "salon-ai-agent",
-  "install": "npm ci && npx prisma generate && DATABASE_URL=file:./dev.db npx prisma db push",
+  "install": "npm ci && bash scripts/ensure-postgres.sh && npx prisma generate && DATABASE_URL=postgresql://salon:salon@127.0.0.1:5432/salon npx prisma migrate deploy",
+  "start": "bash scripts/ensure-postgres.sh",
   "terminals": [
     {
       "name": "Next.js dev server",
