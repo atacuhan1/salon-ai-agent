@@ -8,6 +8,19 @@ function secretKey(): Uint8Array {
 }
 
 export async function middleware(request: NextRequest) {
+  const path = decodeURIComponent(request.nextUrl.pathname);
+
+  if (path === "/kayıt") {
+    return NextResponse.redirect(new URL("/kayit", request.url));
+  }
+  if (path === "/giriş") {
+    return NextResponse.redirect(new URL("/giris", request.url));
+  }
+
+  if (!path.startsWith("/panel")) {
+    return NextResponse.next();
+  }
+
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (!token) {
     const login = new URL("/giris", request.url);
@@ -24,5 +37,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/panel/:path*"],
+  matcher: ["/panel/:path*", "/:slug"],
 };
