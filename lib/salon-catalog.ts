@@ -16,6 +16,10 @@ export interface SalonCatalog {
   services: Service[];
   workingHours: WorkingHours;
   staff: StaffMember[];
+  /** Meta Cloud API phone_number_id bound to this salon (optional). */
+  whatsappPhoneNumberId?: string;
+  /** Google Calendar ID for this salon (optional). */
+  googleCalendarId?: string;
 }
 
 export const DEMO_SALON_KEY = "demo";

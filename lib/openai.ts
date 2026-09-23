@@ -97,7 +97,11 @@ export async function executeTool(
   catalog: SalonCatalog = defaultCatalog,
 ): Promise<unknown> {
   const args = rawArgs ? JSON.parse(rawArgs) : {};
-  const calendar = { salonKey: catalog.id, hours: catalog.workingHours };
+  const calendar = {
+    salonKey: catalog.id,
+    hours: catalog.workingHours,
+    googleCalendarId: catalog.googleCalendarId,
+  };
 
   if (name === "checkAvailability") {
     const slots = await checkAvailability(

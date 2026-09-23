@@ -8,22 +8,42 @@ datasource db {
 }
 
 model Salon {
-  id                 String        @id @default(cuid())
-  slug               String        @unique
-  name               String
-  email              String        @unique
-  passwordHash       String
-  phone              String        @default("")
-  address            String        @default("")
-  timezone           String        @default("Europe/Istanbul")
-  subscriptionStatus String        @default("trial")
-  trialEndsAt        DateTime
-  paidUntil          DateTime?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  services           Service[]
-  staff              StaffMember[]
-  hours              SalonHour[]
+  id                     String        @id @default(cuid())
+  slug                   String        @unique
+  name                   String
+  email                  String        @unique
+  passwordHash           String
+  phone                  String        @default("")
+  address                String        @default("")
+  timezone               String        @default("Europe/Istanbul")
+  /// Meta WhatsApp Cloud API phone_number_id that routes inbound messages to this salon.
+  whatsappPhoneNumberId  String?       @unique
+  /// Google Calendar ID shared with the service account (salon-scoped).
+  googleCalendarId       String?
+  subscriptionStatus     String        @default("trial")
+  trialEndsAt            DateTime
+  paidUntil              DateTime?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  services               Service[]
+  staff                  StaffMember[]
+  hours                  SalonHour[]
+  appointments           Appointment[]
+}
+
+model Appointment {
+  id            String   @id @default(cuid())
+  salonId       String
+  salon         Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  customerName  String
+  customerPhone String
+  serviceName   String
+  startAt       DateTime
+  endAt         DateTime
+  googleEventId String?
+  createdAt     DateTime @default(now())
+
+  @@index([salonId, startAt])
 }
 
 model Service {

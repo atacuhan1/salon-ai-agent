@@ -4,7 +4,7 @@ import { runFallbackAgent } from "@/lib/fallback-agent";
 import type { SalonCatalog } from "@/lib/salon-catalog";
 
 const catalog: SalonCatalog = {
-  id: "lale",
+  id: "demo",
   slug: "lale",
   name: "Lale Nail",
   phone: "0212 000 00 00",

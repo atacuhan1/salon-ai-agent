@@ -47,11 +47,13 @@ npm run build
 | `OPENAI_MODEL` | Varsayılan `gpt-4o-mini` (en ucuz uygun model) |
 | `OPENAI_MAX_TOKENS` | Cevap tavanı, varsayılan `220` |
 | `OPENAI_HISTORY_LIMIT` | Modele giden son mesaj sayısı, varsayılan `4` |
-| `GOOGLE_CALENDAR_ID`, `GOOGLE_CLIENT_EMAIL`, `GOOGLE_PRIVATE_KEY` | Yoksa bellek içi takvim |
+| `GOOGLE_CLIENT_EMAIL`, `GOOGLE_PRIVATE_KEY` | Service account; salon calendar ID panelden |
+| `GOOGLE_CALENDAR_ID` | Yalnızca demo / tek salon fallback |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Yoksa bellek içi sohbet geçmişi |
-| `WHATSAPP_VERIFY_TOKEN` | GET webhook handshake |
-| `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Yanıt gönderme |
-| `WHATSAPP_APP_SECRET` | `X-Hub-Signature-256` doğrulama |
+| `WHATSAPP_VERIFY_TOKEN` | GET webhook handshake (≥16 char, production) |
+| `WHATSAPP_ACCESS_TOKEN` | Graph API gönderim |
+| `WHATSAPP_PHONE_NUMBER_ID` | Gönderim fallback (salon eşlemesi panelden) |
+| `WHATSAPP_APP_SECRET` | `X-Hub-Signature-256` (yoksa webhook reddedilir) |
 | `SALON_TIMEZONE` | `Europe/Istanbul` |
 | `DATABASE_URL` | Postgres bağlantısı (`postgresql://...`). SQLite desteklenmez |
 | `AUTH_SECRET` | Panel oturum çerezi |
@@ -63,9 +65,12 @@ npm run build
 ## Google Calendar
 
 1. Google Cloud’da Calendar API’yi açın.
-2. Service account oluşturup key alın.
-3. Salon takvimini service account e-postasını **Make changes to events** ile paylaşın.
-4. Takvim ID’sini `GOOGLE_CALENDAR_ID` olarak yazın.
+2. Service account oluşturup key alın; `GOOGLE_CLIENT_EMAIL` + `GOOGLE_PRIVATE_KEY` (Vercel env).
+3. Her salon kendi takvimini service account e-postasına **Make changes to events** ile paylaşır.
+4. Salon paneli → Özet → **Google Calendar ID** alanına takvim ID’sini yazın.
+5. Randevular her zaman Postgres’te kalır (panel listesi); Google bağlıysa ayrıca takvime yazılır.
+
+`GOOGLE_CALENDAR_ID` env yalnızca demo / tek-kiracı fallback içindir. Çok salon için panel alanını kullanın.
 
 ## Supabase
 
@@ -86,11 +91,19 @@ Row Level Security kullanıyorsanız service role backend’den yazar. `session_
 
 ## WhatsApp
 
+Production callback URL:
+
+`https://salon-ai-agent-sens6.vercel.app/api/webhook`
+
 Meta App Dashboard → WhatsApp → Configuration:
 
-- Callback URL: `https://<domain>/api/webhook`
-- Verify token: `WHATSAPP_VERIFY_TOKEN`
+- Callback URL: yukarıdaki production URL
+- Verify token: `WHATSAPP_VERIFY_TOKEN` (güçlü rastgele; production’da zayıf/placeholder reddedilir)
 - `messages` alanına abone olun
+- App Secret → `WHATSAPP_APP_SECRET` (imzasız POST reddedilir)
+- Access token + (isteğe bağlı varsayılan) Phone number ID → `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`
+
+**Salon eşlemesi:** webhook `metadata.phone_number_id` okur ve panelde kayıtlı `whatsappPhoneNumberId` ile salonu bulur. Tek env satırı yetmez — her salon kendi Meta `phone_number_id` değerini panele yazar. Eşleşmeyen hatta uyarı mesajı gider.
 
 ## Vercel
 

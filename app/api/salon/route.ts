@@ -11,6 +11,19 @@ const updateSchema = z.object({
   phone: z.string().trim().max(30).optional(),
   address: z.string().trim().max(160).optional(),
   slug: z.string().trim().max(40).optional(),
+  whatsappPhoneNumberId: z
+    .string()
+    .trim()
+    .max(64)
+    .regex(/^[0-9]*$/, "Meta phone_number_id yalnızca rakam olmalı")
+    .optional()
+    .transform((value) => (value === "" ? null : value)),
+  googleCalendarId: z
+    .string()
+    .trim()
+    .max(256)
+    .optional()
+    .transform((value) => (value === "" ? null : value)),
 });
 
 export async function GET() {
@@ -24,6 +37,8 @@ export async function GET() {
         email: salon.email,
         phone: salon.phone,
         address: salon.address,
+        whatsappPhoneNumberId: salon.whatsappPhoneNumberId,
+        googleCalendarId: salon.googleCalendarId,
       },
       access,
     });
@@ -44,6 +59,23 @@ export async function PUT(request: Request) {
     const slug = body.slug
       ? await uniqueSlug(slugify(body.slug), salon.id)
       : undefined;
+
+    if (body.whatsappPhoneNumberId) {
+      const clash = await prisma.salon.findFirst({
+        where: {
+          whatsappPhoneNumberId: body.whatsappPhoneNumberId,
+          NOT: { id: salon.id },
+        },
+        select: { id: true },
+      });
+      if (clash) {
+        return NextResponse.json(
+          { error: "Bu WhatsApp phone_number_id başka bir salona kayıtlı." },
+          { status: 409 },
+        );
+      }
+    }
+
     const updated = await prisma.salon.update({
       where: { id: salon.id },
       data: {
@@ -51,6 +83,12 @@ export async function PUT(request: Request) {
         phone: body.phone,
         address: body.address,
         slug,
+        ...(body.whatsappPhoneNumberId !== undefined
+          ? { whatsappPhoneNumberId: body.whatsappPhoneNumberId }
+          : {}),
+        ...(body.googleCalendarId !== undefined
+          ? { googleCalendarId: body.googleCalendarId }
+          : {}),
       },
     });
     return NextResponse.json({ ok: true, slug: updated.slug });

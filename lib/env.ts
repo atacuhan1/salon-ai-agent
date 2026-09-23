@@ -109,11 +109,16 @@ export function getEnv(): AppEnv {
   return cached;
 }
 
+/** Service account only — per-salon calendar IDs live on Salon.googleCalendarId. */
+export function hasGoogleServiceAccount(): boolean {
+  const env = getEnv();
+  return Boolean(env.GOOGLE_CLIENT_EMAIL && env.GOOGLE_PRIVATE_KEY);
+}
+
+/** True when SA + a calendar id (env demo fallback) are both present. */
 export function hasGoogleCalendarConfig(): boolean {
   const env = getEnv();
-  return Boolean(
-    env.GOOGLE_CALENDAR_ID && env.GOOGLE_CLIENT_EMAIL && env.GOOGLE_PRIVATE_KEY,
-  );
+  return hasGoogleServiceAccount() && Boolean(env.GOOGLE_CALENDAR_ID);
 }
 
 export function hasOpenAIConfig(): boolean {

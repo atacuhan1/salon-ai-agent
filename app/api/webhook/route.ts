@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { handleUserMessage } from "@/lib/agent";
+import { handleUserMessage, SalonAccessError } from "@/lib/agent";
 import { getEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { loadSalonByWhatsAppPhoneNumberId } from "@/lib/salon-store";
 import {
   parseIncomingWhatsApp,
   sendWhatsAppText,
@@ -70,13 +71,65 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  try {
-    const result = await handleUserMessage(incoming.from, incoming.text);
-    await sendWhatsAppText(incoming.from, result.reply);
-  } catch (error) {
-    logger.error("WhatsApp message handling failed", {
-      error: error instanceof Error ? error.message : "unknown",
+  if (!incoming.phoneNumberId) {
+    logger.warn("WhatsApp message missing metadata.phone_number_id; cannot route to salon");
+    return NextResponse.json({ ok: true });
+  }
+
+  const mapped = await loadSalonByWhatsAppPhoneNumberId(incoming.phoneNumberId);
+  if (!mapped) {
+    logger.warn("No salon mapped to WhatsApp phone_number_id", {
+      phoneNumberId: incoming.phoneNumberId,
     });
+    try {
+      await sendWhatsAppText(
+        incoming.from,
+        "Bu WhatsApp hattı henüz bir salona bağlanmamış. Salon paneli → Özet bölümünden Meta phone_number_id değerini kaydedin.",
+        { phoneNumberId: incoming.phoneNumberId },
+      );
+    } catch {
+      // Best-effort notice; still ack Meta.
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  if (!mapped.accessActive) {
+    try {
+      await sendWhatsAppText(
+        incoming.from,
+        "Bu salonun aboneliği aktif değil. Randevu asistanı kapalı.",
+        { phoneNumberId: incoming.phoneNumberId },
+      );
+    } catch {
+      // ignore
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  try {
+    const result = await handleUserMessage(
+      incoming.from,
+      incoming.text,
+      mapped.catalog.slug,
+    );
+    await sendWhatsAppText(incoming.from, result.reply, {
+      phoneNumberId: incoming.phoneNumberId,
+    });
+  } catch (error) {
+    if (error instanceof SalonAccessError) {
+      try {
+        await sendWhatsAppText(incoming.from, error.message, {
+          phoneNumberId: incoming.phoneNumberId,
+        });
+      } catch {
+        // ignore
+      }
+    } else {
+      logger.error("WhatsApp message handling failed", {
+        error: error instanceof Error ? error.message : "unknown",
+        salonSlug: mapped.catalog.slug,
+      });
+    }
   }
 
   return NextResponse.json({ ok: true });
