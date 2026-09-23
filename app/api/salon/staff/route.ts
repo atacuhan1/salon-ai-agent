@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { errorResponse, requireOwner } from "@/lib/api-guard";
+import { requireOwner, toErrorResponse } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
-
-const hhmm = z
-  .string()
-  .transform((value) => value.slice(0, 5))
-  .refine((value) => /^\d{2}:\d{2}$/.test(value));
+import { hhmm } from "@/lib/salon-schemas";
 
 const staffSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -20,7 +16,10 @@ export async function GET() {
     const { salon } = await requireOwner({ allowExpired: true });
     return NextResponse.json({ staff: salon.staff });
   } catch (error) {
-    return errorResponse(error) ?? NextResponse.json({ error: "Çalışanlar okunamadı." }, { status: 500 });
+    return toErrorResponse(error, {
+      zodMessage: "Geçersiz istek.",
+      fallbackMessage: "Çalışanlar okunamadı.",
+    });
   }
 }
 
@@ -39,14 +38,9 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ staff: created });
   } catch (error) {
-    return (
-      errorResponse(error) ??
-      (error instanceof z.ZodError
-        ? NextResponse.json(
-            { error: "İsim, çalışma günleri ve saatler gerekli." },
-            { status: 400 },
-          )
-        : NextResponse.json({ error: "Çalışan eklenemedi." }, { status: 500 }))
-    );
+    return toErrorResponse(error, {
+      zodMessage: "İsim, çalışma günleri ve saatler gerekli.",
+      fallbackMessage: "Çalışan eklenemedi.",
+    });
   }
 }

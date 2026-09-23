@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { errorResponse, requireOwner } from "@/lib/api-guard";
+import { requireOwner, toErrorResponse } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
-import { paidUntilFrom } from "@/lib/subscription";
+import { paidUntilFrom, SUBSCRIPTION_STATUS } from "@/lib/subscription";
 
 const bodySchema = z.object({
   action: z.enum(["activate", "cancel"]),
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       const updated = await prisma.salon.update({
         where: { id: salon.id },
         data: {
-          subscriptionStatus: "active",
+          subscriptionStatus: SUBSCRIPTION_STATUS.active,
           paidUntil,
         },
       });
@@ -46,18 +46,16 @@ export async function POST(request: Request) {
 
     const updated = await prisma.salon.update({
       where: { id: salon.id },
-      data: { subscriptionStatus: "canceled" },
+      data: { subscriptionStatus: SUBSCRIPTION_STATUS.canceled },
     });
     return NextResponse.json({
       ok: true,
       status: updated.subscriptionStatus,
     });
   } catch (error) {
-    return (
-      errorResponse(error) ??
-      (error instanceof z.ZodError
-        ? NextResponse.json({ error: "Geçersiz istek." }, { status: 400 })
-        : NextResponse.json({ error: "Abonelik güncellenemedi." }, { status: 500 }))
-    );
+    return toErrorResponse(error, {
+      zodMessage: "Geçersiz istek.",
+      fallbackMessage: "Abonelik güncellenemedi.",
+    });
   }
 }

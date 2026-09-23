@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { errorResponse, requireOwner } from "@/lib/api-guard";
+import { requireOwner, toErrorResponse } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
 import { keywordsFromName } from "@/lib/salon-catalog";
 
@@ -17,6 +17,8 @@ export async function PUT(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
+    const blocked = rejectIfCrossOrigin(request);
+    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const { id } = await context.params;
     const existing = salon.services.find((service) => service.id === id);
@@ -49,20 +51,20 @@ export async function PUT(
     });
     return NextResponse.json({ service });
   } catch (error) {
-    return (
-      errorResponse(error) ??
-      (error instanceof z.ZodError
-        ? NextResponse.json({ error: "Geçersiz hizmet." }, { status: 400 })
-        : NextResponse.json({ error: "Hizmet güncellenemedi." }, { status: 500 }))
-    );
+    return toErrorResponse(error, {
+      zodMessage: "Geçersiz hizmet.",
+      fallbackMessage: "Hizmet güncellenemedi.",
+    });
   }
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   try {
+    const blocked = rejectIfCrossOrigin(request);
+    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const { id } = await context.params;
     if (!salon.services.some((service) => service.id === id)) {
@@ -76,6 +78,9 @@ export async function DELETE(
     }
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return errorResponse(error) ?? NextResponse.json({ error: "Silinemedi." }, { status: 500 });
+    return toErrorResponse(error, {
+      zodMessage: "Geçersiz istek.",
+      fallbackMessage: "Silinemedi.",
+    });
   }
 }
