@@ -3,6 +3,7 @@ import { z } from "zod";
 import { errorResponse, requireOwner } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
 import { keywordsFromName } from "@/lib/salon-catalog";
+import { rejectIfCrossOrigin } from "@/lib/request-origin";
 
 const updateSchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),
@@ -17,6 +18,8 @@ export async function PUT(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
+    const blocked = rejectIfCrossOrigin(request);
+    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const { id } = await context.params;
     const existing = salon.services.find((service) => service.id === id);
@@ -59,10 +62,12 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   try {
+    const blocked = rejectIfCrossOrigin(request);
+    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const { id } = await context.params;
     if (!salon.services.some((service) => service.id === id)) {

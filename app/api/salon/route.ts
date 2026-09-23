@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { slugify } from "@/lib/slug";
 import { uniqueSlug } from "@/lib/salon-store";
+import { rejectIfCrossOrigin } from "@/lib/request-origin";
 
 const updateSchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),
@@ -34,6 +35,8 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
+    const blocked = rejectIfCrossOrigin(request);
+    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const body = updateSchema.parse(await request.json());
     const slug = body.slug

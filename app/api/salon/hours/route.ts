@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { errorResponse, requireOwner } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
+import { rejectIfCrossOrigin } from "@/lib/request-origin";
 
 const hhmm = z
   .string()
@@ -23,6 +24,8 @@ const hoursSchema = z.object({
 
 export async function PUT(request: Request) {
   try {
+    const blocked = rejectIfCrossOrigin(request);
+    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const body = hoursSchema.parse(await request.json());
     for (const row of body.hours) {

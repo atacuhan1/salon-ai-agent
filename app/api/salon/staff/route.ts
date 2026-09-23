@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { errorResponse, requireOwner } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
+import { rejectIfCrossOrigin } from "@/lib/request-origin";
 
 const hhmm = z
   .string()
@@ -26,6 +27,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const blocked = rejectIfCrossOrigin(request);
+    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const body = staffSchema.parse(await request.json());
     const created = await prisma.staffMember.create({
