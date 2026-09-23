@@ -1,7 +1,19 @@
 export const TRIAL_DAYS = 14;
 export const PAID_DAYS = 30;
 
-export type SubscriptionStatus = "trial" | "active" | "expired" | "canceled";
+export const SUBSCRIPTION_STATUS = {
+  trial: "trial",
+  active: "active",
+  expired: "expired",
+  canceled: "canceled",
+} as const;
+
+export type SubscriptionStatus =
+  (typeof SUBSCRIPTION_STATUS)[keyof typeof SUBSCRIPTION_STATUS];
+
+const SUBSCRIPTION_STATUS_VALUES = new Set<string>(
+  Object.values(SUBSCRIPTION_STATUS),
+);
 
 export interface SubscriptionFields {
   subscriptionStatus: string;
@@ -18,10 +30,10 @@ export interface AccessState {
 }
 
 function asStatus(value: string): SubscriptionStatus {
-  if (value === "trial" || value === "active" || value === "expired" || value === "canceled") {
-    return value;
+  if (SUBSCRIPTION_STATUS_VALUES.has(value)) {
+    return value as SubscriptionStatus;
   }
-  return "expired";
+  return SUBSCRIPTION_STATUS.expired;
 }
 
 export function trialEndsFrom(now = new Date()): Date {
@@ -35,32 +47,36 @@ export function paidUntilFrom(now = new Date()): Date {
 export function getAccessState(salon: SubscriptionFields, now = new Date()): AccessState {
   const stored = asStatus(salon.subscriptionStatus);
 
-  if (stored === "canceled") {
+  if (stored === SUBSCRIPTION_STATUS.canceled) {
     return {
       active: false,
-      status: "canceled",
+      status: SUBSCRIPTION_STATUS.canceled,
       label: "İptal edildi",
       endsAt: salon.paidUntil,
       daysLeft: 0,
     };
   }
 
-  if (stored === "active" && salon.paidUntil && salon.paidUntil.getTime() > now.getTime()) {
+  if (
+    stored === SUBSCRIPTION_STATUS.active &&
+    salon.paidUntil &&
+    salon.paidUntil.getTime() > now.getTime()
+  ) {
     const daysLeft = Math.ceil((salon.paidUntil.getTime() - now.getTime()) / 86_400_000);
     return {
       active: true,
-      status: "active",
+      status: SUBSCRIPTION_STATUS.active,
       label: "Aktif abonelik",
       endsAt: salon.paidUntil,
       daysLeft,
     };
   }
 
-  if (stored === "trial" && salon.trialEndsAt.getTime() > now.getTime()) {
+  if (stored === SUBSCRIPTION_STATUS.trial && salon.trialEndsAt.getTime() > now.getTime()) {
     const daysLeft = Math.ceil((salon.trialEndsAt.getTime() - now.getTime()) / 86_400_000);
     return {
       active: true,
-      status: "trial",
+      status: SUBSCRIPTION_STATUS.trial,
       label: "Deneme süresi",
       endsAt: salon.trialEndsAt,
       daysLeft,
@@ -69,9 +85,9 @@ export function getAccessState(salon: SubscriptionFields, now = new Date()): Acc
 
   return {
     active: false,
-    status: "expired",
+    status: SUBSCRIPTION_STATUS.expired,
     label: "Abonelik yok",
-    endsAt: stored === "trial" ? salon.trialEndsAt : salon.paidUntil,
+    endsAt: stored === SUBSCRIPTION_STATUS.trial ? salon.trialEndsAt : salon.paidUntil,
     daysLeft: 0,
   };
 }

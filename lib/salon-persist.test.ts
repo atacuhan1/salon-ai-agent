@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { SUBSCRIPTION_STATUS } from "@/lib/subscription";
 
 test("salon rows survive a new Prisma client (Postgres)", async () => {
   const email = `persist-${Date.now()}@example.com`;
@@ -12,7 +13,7 @@ test("salon rows survive a new Prisma client (Postgres)", async () => {
       email,
       slug,
       passwordHash: "test-hash",
-      subscriptionStatus: "trial",
+      subscriptionStatus: SUBSCRIPTION_STATUS.trial,
       trialEndsAt: new Date(Date.now() + 14 * 86_400_000),
     },
   });

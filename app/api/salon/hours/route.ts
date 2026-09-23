@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { errorResponse, requireOwner } from "@/lib/api-guard";
+import { requireOwner, toErrorResponse } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
-
-const hhmm = z
-  .string()
-  .transform((value) => value.slice(0, 5))
-  .refine((value) => /^\d{2}:\d{2}$/.test(value));
+import { rejectIfCrossOrigin } from "@/lib/request-origin";
+import { hhmm } from "@/lib/salon-schemas";
 
 const hoursSchema = z.object({
   hours: z
@@ -23,6 +20,8 @@ const hoursSchema = z.object({
 
 export async function PUT(request: Request) {
   try {
+    const blocked = rejectIfCrossOrigin(request);
+    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const body = hoursSchema.parse(await request.json());
     for (const row of body.hours) {
@@ -42,11 +41,9 @@ export async function PUT(request: Request) {
     }
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return (
-      errorResponse(error) ??
-      (error instanceof z.ZodError
-        ? NextResponse.json({ error: "Saat bilgisi eksik." }, { status: 400 })
-        : NextResponse.json({ error: "Saatler kaydedilemedi." }, { status: 500 }))
-    );
+    return toErrorResponse(error, {
+      zodMessage: "Saat bilgisi eksik.",
+      fallbackMessage: "Saatler kaydedilemedi.",
+    });
   }
 }

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { errorResponse, requireOwner } from "@/lib/api-guard";
+import { requireOwner, toErrorResponse } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
-import { logger } from "@/lib/logger";
 import { slugify } from "@/lib/slug";
 import { uniqueSlug } from "@/lib/salon-store";
+import { rejectIfCrossOrigin } from "@/lib/request-origin";
 
 const updateSchema = z.object({
   name: z.string().trim().min(2).max(80).optional(),
@@ -28,12 +28,17 @@ export async function GET() {
       access,
     });
   } catch (error) {
-    return errorResponse(error) ?? NextResponse.json({ error: "Salon okunamadı." }, { status: 500 });
+    return toErrorResponse(error, {
+      zodMessage: "Geçersiz istek.",
+      fallbackMessage: "Salon okunamadı.",
+    });
   }
 }
 
 export async function PUT(request: Request) {
   try {
+    const blocked = rejectIfCrossOrigin(request);
+    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const body = updateSchema.parse(await request.json());
     const slug = body.slug
@@ -50,14 +55,10 @@ export async function PUT(request: Request) {
     });
     return NextResponse.json({ ok: true, slug: updated.slug });
   } catch (error) {
-    logger.error("PUT /api/salon failed", {
-      error: error instanceof Error ? error.message : "unknown",
+    return toErrorResponse(error, {
+      zodMessage: "Geçersiz salon bilgisi.",
+      fallbackMessage: "Güncellenemedi.",
+      logKey: "PUT /api/salon failed",
     });
-    return (
-      errorResponse(error) ??
-      (error instanceof z.ZodError
-        ? NextResponse.json({ error: "Geçersiz salon bilgisi." }, { status: 400 })
-        : NextResponse.json({ error: "Güncellenemedi." }, { status: 500 }))
-    );
   }
 }

@@ -4,7 +4,6 @@ import {
   SALON_NAME,
   SALON_PHONE,
   services as defaultServices,
-  weekdayLabels,
   workingHours as defaultHours,
 } from "@/prompts/salon-rules";
 
@@ -98,34 +97,4 @@ export function effectiveWorkingHours(catalog: SalonCatalog): WorkingHours {
   }
 
   return hours;
-}
-
-export function hoursBlurb(hours: WorkingHours): string {
-  const openDays = [1, 2, 3, 4, 5, 6, 0]
-    .map((weekday) => {
-      const slot = hours[weekday];
-      if (!slot) {
-        return `${weekdayLabels[weekday]} kapalı`;
-      }
-      return `${weekdayLabels[weekday]} ${slot.open}–${slot.close}`;
-    })
-    .join(", ");
-  return openDays;
-}
-
-export function staffBlurb(staff: StaffMember[]): string {
-  const active = staff.filter((member) => member.active);
-  if (active.length === 0) {
-    return "Tek kişi veya belirtilmemiş.";
-  }
-  return active
-    .map((member) => {
-      const days = member.weekdays
-        .slice()
-        .sort((a, b) => a - b)
-        .map((day) => weekdayLabels[day])
-        .join("/");
-      return `${member.name} (${days || "gün yok"} ${member.open}–${member.close})`;
-    })
-    .join("; ");
 }
