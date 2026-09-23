@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma migrate deploy && next build --turbopack",
+    "build": "sh -c 'export DATABASE_URL=\"${DATABASE_URL:-$database_DATABASE_URL}\"; prisma migrate deploy && next build --turbopack'",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
