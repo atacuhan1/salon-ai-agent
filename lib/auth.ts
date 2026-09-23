@@ -2,13 +2,13 @@ import { compare, hash } from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE } from "@/lib/auth-constants";
+import { authSecretKey } from "@/lib/auth-secret";
 import { prisma } from "@/lib/db";
 
 const SESSION_DAYS = 7;
 
 function secretKey(): Uint8Array {
-  const secret = process.env.AUTH_SECRET || "dev-salon-ai-change-me-in-production";
-  return new TextEncoder().encode(secret);
+  return authSecretKey();
 }
 
 export async function hashPassword(password: string): Promise<string> {

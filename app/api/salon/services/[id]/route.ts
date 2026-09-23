@@ -28,8 +28,8 @@ export async function PUT(
       ?.split(",")
       .map((item) => item.trim())
       .filter(Boolean);
-    const updated = await prisma.service.update({
-      where: { id },
+    const updated = await prisma.service.updateMany({
+      where: { id, salonId: salon.id },
       data: {
         name: body.name,
         durationMinutes: body.durationMinutes,
@@ -41,7 +41,13 @@ export async function PUT(
             : undefined,
       },
     });
-    return NextResponse.json({ service: updated });
+    if (updated.count === 0) {
+      return NextResponse.json({ error: "Hizmet bulunamadı." }, { status: 404 });
+    }
+    const service = await prisma.service.findFirst({
+      where: { id, salonId: salon.id },
+    });
+    return NextResponse.json({ service });
   } catch (error) {
     return (
       errorResponse(error) ??
@@ -62,7 +68,12 @@ export async function DELETE(
     if (!salon.services.some((service) => service.id === id)) {
       return NextResponse.json({ error: "Hizmet bulunamadı." }, { status: 404 });
     }
-    await prisma.service.delete({ where: { id } });
+    const deleted = await prisma.service.deleteMany({
+      where: { id, salonId: salon.id },
+    });
+    if (deleted.count === 0) {
+      return NextResponse.json({ error: "Hizmet bulunamadı." }, { status: 404 });
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     return errorResponse(error) ?? NextResponse.json({ error: "Silinemedi." }, { status: 500 });

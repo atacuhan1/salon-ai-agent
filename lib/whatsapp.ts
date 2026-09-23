@@ -46,8 +46,9 @@ export interface IncomingWhatsAppMessage {
 export function verifyWhatsAppSignature(rawBody: string, signatureHeader: string | null): boolean {
   const secret = getEnv().WHATSAPP_APP_SECRET;
   if (!secret) {
-    logger.warn("WHATSAPP_APP_SECRET missing; skipping signature check");
-    return true;
+    // Fail closed: never accept unsigned webhooks when secret is unset.
+    logger.warn("WHATSAPP_APP_SECRET missing; rejecting webhook signature check");
+    return false;
   }
   if (!signatureHeader?.startsWith("sha256=")) {
     return false;
