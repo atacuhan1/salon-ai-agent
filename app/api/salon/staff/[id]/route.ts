@@ -27,8 +27,8 @@ export async function PUT(
       return NextResponse.json({ error: "Çalışan bulunamadı." }, { status: 404 });
     }
     const body = updateSchema.parse(await request.json());
-    const updated = await prisma.staffMember.update({
-      where: { id },
+    const updated = await prisma.staffMember.updateMany({
+      where: { id, salonId: salon.id },
       data: {
         name: body.name,
         weekdays: body.weekdays ? JSON.stringify(body.weekdays) : undefined,
@@ -37,7 +37,13 @@ export async function PUT(
         active: body.active,
       },
     });
-    return NextResponse.json({ staff: updated });
+    if (updated.count === 0) {
+      return NextResponse.json({ error: "Çalışan bulunamadı." }, { status: 404 });
+    }
+    const staff = await prisma.staffMember.findFirst({
+      where: { id, salonId: salon.id },
+    });
+    return NextResponse.json({ staff });
   } catch (error) {
     return (
       errorResponse(error) ??
@@ -58,7 +64,12 @@ export async function DELETE(
     if (!salon.staff.some((member) => member.id === id)) {
       return NextResponse.json({ error: "Çalışan bulunamadı." }, { status: 404 });
     }
-    await prisma.staffMember.delete({ where: { id } });
+    const deleted = await prisma.staffMember.deleteMany({
+      where: { id, salonId: salon.id },
+    });
+    if (deleted.count === 0) {
+      return NextResponse.json({ error: "Çalışan bulunamadı." }, { status: 404 });
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     return errorResponse(error) ?? NextResponse.json({ error: "Silinemedi." }, { status: 500 });

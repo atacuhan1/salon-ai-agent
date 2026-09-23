@@ -27,7 +27,7 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: optionalString,
   WHATSAPP_VERIFY_TOKEN: z.preprocess(
     blankToUndefined,
-    z.string().min(1).default("salon-dev-verify"),
+    z.string().min(1).optional(),
   ),
   WHATSAPP_ACCESS_TOKEN: optionalString,
   WHATSAPP_PHONE_NUMBER_ID: optionalString,

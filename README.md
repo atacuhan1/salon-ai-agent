@@ -26,10 +26,10 @@ npm run dev
 - Panel: `/panel` (hizmet, çalışan, saat, abonelik)
 - Örnek sohbet: `/demo`
 - Müşteri sohbeti: `/s/<slug>`
-- Sağlık: `GET /api/health`
-- Sabit mesajlı tool testi: `GET /api/test-chat`
-- Sohbet: `POST /api/chat` `{ "sessionId": "90555…", "message": "…", "salonSlug": "opsiyonel" }`
-- WhatsApp doğrulama: `GET /api/webhook?hub.mode=subscribe&hub.verify_token=salon-dev-verify&hub.challenge=123`
+- Sağlık: `GET /api/health` (detay için `HEALTH_DETAILS=1`)
+- Sabit mesajlı tool testi: `GET /api/test-chat` (yalnızca development)
+- Sohbet: `POST /api/chat` `{ "sessionId": "opsiyonel", "message": "…", "salonSlug": "opsiyonel" }`
+- WhatsApp doğrulama: `GET /api/webhook?hub.mode=subscribe&hub.verify_token=<WHATSAPP_VERIFY_TOKEN>&hub.challenge=123`
 
 ```bash
 npm test

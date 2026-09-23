@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseIncomingWhatsApp } from "@/lib/whatsapp";
+import { parseIncomingWhatsApp, verifyWhatsAppSignature } from "@/lib/whatsapp";
+
+test("verifyWhatsAppSignature fails closed when app secret is missing", () => {
+  assert.equal(verifyWhatsAppSignature("{}", null), false);
+  assert.equal(verifyWhatsAppSignature("{}", "sha256=deadbeef"), false);
+});
 
 test("parses a Cloud API text message", () => {
   const incoming = parseIncomingWhatsApp({

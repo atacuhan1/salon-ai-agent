@@ -389,7 +389,7 @@ export function BillingActions({ locked }: { locked: boolean }) {
   return (
     <div className="space-y-3">
       <button type="button" className={buttonClass} onClick={() => run("activate")}>
-        {locked ? "Ödemeyi simüle et (30 gün)" : "Aboneliği 30 gün uzat"}
+        {locked ? "Aboneliği etkinleştir" : "Aboneliği 30 gün uzat"}
       </button>
       {!locked ? (
         <button
@@ -402,8 +402,9 @@ export function BillingActions({ locked }: { locked: boolean }) {
       ) : null}
       {error ? <p className="text-sm text-[#8e4b56]">{error}</p> : null}
       <p className="text-sm text-[#5a4144]">
-        Gerçek Stripe henüz yok; bu düğme ödemeyi simüle eder. İptal edilince müşteri
-        sohbeti kapanır.
+        Production’da simüle ödeme kapalıdır (gerçek ödeme sağlayıcısı bekleniyor). Geliştirme
+        ortamında veya BILLING_SIMULATION=1 ile deneme etkinleştirmesi yapılabilir. İptal
+        edilince müşteri sohbeti kapanır.
       </p>
     </div>
   );

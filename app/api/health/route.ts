@@ -1,60 +1,34 @@
 import { NextResponse } from "next/server";
 import { prisma, getDatabaseUrlStatus } from "@/lib/db";
-import {
-  hasGoogleCalendarConfig,
-  hasOpenAIConfig,
-  hasSupabaseConfig,
-  hasWhatsAppSendConfig,
-} from "@/lib/env";
 import { salonTimeZone } from "@/lib/timezone";
 
+/**
+ * Public health: minimal surface. Detailed diagnostics only when
+ * HEALTH_DETAILS=1 (internal/ops), never dump env key lists by default.
+ */
 export async function GET() {
-  const dbStatus = getDatabaseUrlStatus();
   let database = false;
-  let databaseError: string | undefined;
 
   try {
-    // Use a model call (same path as register/login), not $queryRaw through the lazy proxy.
     await prisma.salon.count();
     database = true;
-  } catch (error) {
+  } catch {
     database = false;
-    databaseError =
-      error instanceof Error ? error.message : "database_unavailable";
   }
 
-  let providers = {
-    openai: false,
-    googleCalendar: false,
-    supabase: false,
-    whatsapp: false,
-  };
-  let timezone = "Europe/Istanbul";
-  let envError: string | undefined;
-
-  try {
-    timezone = salonTimeZone();
-    providers = {
-      openai: hasOpenAIConfig(),
-      googleCalendar: hasGoogleCalendarConfig(),
-      supabase: hasSupabaseConfig(),
-      whatsapp: hasWhatsAppSendConfig(),
-    };
-  } catch (error) {
-    envError = error instanceof Error ? error.message : "env_parse_failed";
-  }
-
-  return NextResponse.json({
-    ok: database && !envError,
-    timezone,
+  const body: Record<string, unknown> = {
+    ok: database,
     database,
-    databaseError: database ? undefined : databaseError,
-    envError,
-    dbEnv: {
+    timezone: salonTimeZone(),
+  };
+
+  if (process.env.HEALTH_DETAILS === "1") {
+    const dbStatus = getDatabaseUrlStatus();
+    body.dbEnv = {
       hasDatabaseUrl: dbStatus.hasDatabaseUrl,
       hasPrefixedDatabaseUrl: dbStatus.hasPrefixedDatabaseUrl,
-      relatedEnvKeys: dbStatus.relatedEnvKeys,
-    },
-    providers,
-  });
+    };
+  }
+
+  return NextResponse.json(body);
 }
