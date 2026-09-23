@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { errorResponse, requireOwner } from "@/lib/api-guard";
+import { requireOwner, toErrorResponse } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
 import { keywordsFromName } from "@/lib/salon-catalog";
 import { rejectIfCrossOrigin } from "@/lib/request-origin";
@@ -17,7 +17,10 @@ export async function GET() {
     const { salon } = await requireOwner({ allowExpired: true });
     return NextResponse.json({ services: salon.services });
   } catch (error) {
-    return errorResponse(error) ?? NextResponse.json({ error: "Hizmetler okunamadı." }, { status: 500 });
+    return toErrorResponse(error, {
+      zodMessage: "Geçersiz istek.",
+      fallbackMessage: "Hizmetler okunamadı.",
+    });
   }
 }
 
@@ -43,11 +46,9 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ service: created });
   } catch (error) {
-    return (
-      errorResponse(error) ??
-      (error instanceof z.ZodError
-        ? NextResponse.json({ error: "Hizmet adı, süre ve ücret gerekli." }, { status: 400 })
-        : NextResponse.json({ error: "Hizmet eklenemedi." }, { status: 500 }))
-    );
+    return toErrorResponse(error, {
+      zodMessage: "Hizmet adı, süre ve ücret gerekli.",
+      fallbackMessage: "Hizmet eklenemedi.",
+    });
   }
 }

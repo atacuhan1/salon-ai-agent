@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createSessionToken, hashPassword, setSessionCookie } from "@/lib/auth";
+import { toErrorResponse } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
-import { logger } from "@/lib/logger";
 import { slugify } from "@/lib/slug";
 import { seedSalonDefaults, uniqueSlug } from "@/lib/salon-store";
-import { trialEndsFrom } from "@/lib/subscription";
+import { SUBSCRIPTION_STATUS, trialEndsFrom } from "@/lib/subscription";
 
 const bodySchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
         phone: body.phone,
         address: body.address,
         slug,
-        subscriptionStatus: "trial",
+        subscriptionStatus: SUBSCRIPTION_STATUS.trial,
         trialEndsAt: trialEndsFrom(),
       },
     });
@@ -47,15 +47,10 @@ export async function POST(request: Request) {
     await setSessionCookie(token);
     return NextResponse.json({ ok: true, slug: salon.slug });
   } catch (error) {
-    logger.error("POST /api/auth/register failed", {
-      error: error instanceof Error ? error.message : "unknown",
+    return toErrorResponse(error, {
+      zodMessage: "Ad, geçerli e-posta ve en az 8 karakter şifre gerekli.",
+      fallbackMessage: "Kayıt başarısız.",
+      logKey: "POST /api/auth/register failed",
     });
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Ad, geçerli e-posta ve en az 8 karakter şifre gerekli." },
-        { status: 400 },
-      );
-    }
-    return NextResponse.json({ error: "Kayıt başarısız." }, { status: 500 });
   }
 }

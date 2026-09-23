@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { errorResponse, requireOwner } from "@/lib/api-guard";
+import { requireOwner, toErrorResponse } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
 import { keywordsFromName } from "@/lib/salon-catalog";
 import { rejectIfCrossOrigin } from "@/lib/request-origin";
@@ -52,12 +52,10 @@ export async function PUT(
     });
     return NextResponse.json({ service });
   } catch (error) {
-    return (
-      errorResponse(error) ??
-      (error instanceof z.ZodError
-        ? NextResponse.json({ error: "Geçersiz hizmet." }, { status: 400 })
-        : NextResponse.json({ error: "Hizmet güncellenemedi." }, { status: 500 }))
-    );
+    return toErrorResponse(error, {
+      zodMessage: "Geçersiz hizmet.",
+      fallbackMessage: "Hizmet güncellenemedi.",
+    });
   }
 }
 
@@ -81,6 +79,9 @@ export async function DELETE(
     }
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return errorResponse(error) ?? NextResponse.json({ error: "Silinemedi." }, { status: 500 });
+    return toErrorResponse(error, {
+      zodMessage: "Geçersiz istek.",
+      fallbackMessage: "Silinemedi.",
+    });
   }
 }
