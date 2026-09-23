@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 import { requireSalon } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { getAccessState } from "@/lib/subscription";
 
 export class HttpError extends Error {
@@ -28,4 +30,26 @@ export function errorResponse(error: unknown) {
     return NextResponse.json({ error: error.message }, { status: error.status });
   }
   return null;
+}
+
+export function toErrorResponse(
+  error: unknown,
+  options: {
+    zodMessage: string;
+    fallbackMessage: string;
+    logKey?: string;
+  },
+) {
+  if (error instanceof HttpError) {
+    return NextResponse.json({ error: error.message }, { status: error.status });
+  }
+  if (error instanceof ZodError) {
+    return NextResponse.json({ error: options.zodMessage }, { status: 400 });
+  }
+  if (options.logKey) {
+    logger.error(options.logKey, {
+      error: error instanceof Error ? error.message : "unknown",
+    });
+  }
+  return NextResponse.json({ error: options.fallbackMessage }, { status: 500 });
 }
