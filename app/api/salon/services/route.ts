@@ -3,6 +3,7 @@ import { z } from "zod";
 import { errorResponse, requireOwner } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
 import { keywordsFromName } from "@/lib/salon-catalog";
+import { rejectIfCrossOrigin } from "@/lib/request-origin";
 
 const serviceSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -22,6 +23,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const blocked = rejectIfCrossOrigin(request);
+    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const body = serviceSchema.parse(await request.json());
     const extra = body.keywords

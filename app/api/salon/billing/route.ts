@@ -3,6 +3,7 @@ import { z } from "zod";
 import { errorResponse, requireOwner } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
 import { paidUntilFrom } from "@/lib/subscription";
+import { rejectIfCrossOrigin } from "@/lib/request-origin";
 
 const bodySchema = z.object({
   action: z.enum(["activate", "cancel"]),
@@ -17,6 +18,8 @@ function billingSimulationEnabled(): boolean {
 
 export async function POST(request: Request) {
   try {
+    const blocked = rejectIfCrossOrigin(request);
+    if (blocked) return blocked;
     const { salon } = await requireOwner({ allowExpired: true });
     const body = bodySchema.parse(await request.json());
     if (body.action === "activate") {
