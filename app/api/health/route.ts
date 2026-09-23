@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDatabaseUrlStatus, getPrisma } from "@/lib/db";
+import { prisma, getDatabaseUrlStatus } from "@/lib/db";
 import {
   hasGoogleCalendarConfig,
   hasOpenAIConfig,
@@ -14,7 +14,8 @@ export async function GET() {
   let databaseError: string | undefined;
 
   try {
-    await getPrisma().$queryRaw`SELECT 1`;
+    // Use a model call (same path as register/login), not $queryRaw through the lazy proxy.
+    await prisma.salon.count();
     database = true;
   } catch (error) {
     database = false;
@@ -22,21 +23,38 @@ export async function GET() {
       error instanceof Error ? error.message : "database_unavailable";
   }
 
+  let providers = {
+    openai: false,
+    googleCalendar: false,
+    supabase: false,
+    whatsapp: false,
+  };
+  let timezone = "Europe/Istanbul";
+  let envError: string | undefined;
+
+  try {
+    timezone = salonTimeZone();
+    providers = {
+      openai: hasOpenAIConfig(),
+      googleCalendar: hasGoogleCalendarConfig(),
+      supabase: hasSupabaseConfig(),
+      whatsapp: hasWhatsAppSendConfig(),
+    };
+  } catch (error) {
+    envError = error instanceof Error ? error.message : "env_parse_failed";
+  }
+
   return NextResponse.json({
-    ok: database,
-    timezone: salonTimeZone(),
+    ok: database && !envError,
+    timezone,
     database,
     databaseError: database ? undefined : databaseError,
+    envError,
     dbEnv: {
       hasDatabaseUrl: dbStatus.hasDatabaseUrl,
       hasPrefixedDatabaseUrl: dbStatus.hasPrefixedDatabaseUrl,
       relatedEnvKeys: dbStatus.relatedEnvKeys,
     },
-    providers: {
-      openai: hasOpenAIConfig(),
-      googleCalendar: hasGoogleCalendarConfig(),
-      supabase: hasSupabaseConfig(),
-      whatsapp: hasWhatsAppSendConfig(),
-    },
+    providers,
   });
 }
