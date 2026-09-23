@@ -17,8 +17,6 @@ export async function PUT(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const blocked = rejectIfCrossOrigin(request);
-    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const { id } = await context.params;
     const existing = salon.services.find((service) => service.id === id);
@@ -59,12 +57,10 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: Request,
+  _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const blocked = rejectIfCrossOrigin(request);
-    if (blocked) return blocked;
     const { salon } = await requireOwner();
     const { id } = await context.params;
     if (!salon.services.some((service) => service.id === id)) {
