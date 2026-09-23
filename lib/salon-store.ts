@@ -100,6 +100,8 @@ export function salonToCatalog(salon: SalonWithSettings): SalonCatalog {
     services: mapServices(salon.services),
     workingHours: hoursFromRecords(salon.hours),
     staff: mapStaff(salon.staff),
+    whatsappPhoneNumberId: salon.whatsappPhoneNumberId ?? undefined,
+    googleCalendarId: salon.googleCalendarId ?? undefined,
   };
 }
 
@@ -109,6 +111,36 @@ export async function loadSalonBySlug(slug: string): Promise<{
 } | null> {
   const salon = await prisma.salon.findUnique({
     where: { slug },
+    include: {
+      services: { orderBy: { sortOrder: "asc" } },
+      staff: true,
+      hours: true,
+    },
+  });
+  if (!salon) {
+    return null;
+  }
+  const catalog = salonToCatalog(salon);
+  catalog.workingHours = effectiveWorkingHours(catalog);
+  return {
+    catalog,
+    accessActive: getAccessState(salon).active,
+  };
+}
+
+/** Resolve salon from Meta WhatsApp Cloud API metadata.phone_number_id. */
+export async function loadSalonByWhatsAppPhoneNumberId(
+  phoneNumberId: string,
+): Promise<{
+  catalog: SalonCatalog;
+  accessActive: boolean;
+} | null> {
+  const trimmed = phoneNumberId.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const salon = await prisma.salon.findUnique({
+    where: { whatsappPhoneNumberId: trimmed },
     include: {
       services: { orderBy: { sortOrder: "asc" } },
       staff: true,

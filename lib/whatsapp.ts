@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { getEnv, hasWhatsAppSendConfig } from "@/lib/env";
+import { getEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 const textMessageSchema = z.object({
@@ -15,6 +15,12 @@ const textMessageSchema = z.object({
 
 const changeValueSchema = z.object({
   messaging_product: z.string().optional(),
+  metadata: z
+    .object({
+      display_phone_number: z.string().optional(),
+      phone_number_id: z.string().optional(),
+    })
+    .optional(),
   messages: z.array(z.unknown()).optional(),
   statuses: z.array(z.unknown()).optional(),
 });
@@ -41,6 +47,9 @@ export interface IncomingWhatsAppMessage {
   from: string;
   messageId: string;
   text: string;
+  /** Meta Cloud API phone_number_id that received the message (salon routing key). */
+  phoneNumberId?: string;
+  displayPhoneNumber?: string;
 }
 
 export function verifyWhatsAppSignature(rawBody: string, signatureHeader: string | null): boolean {
@@ -73,6 +82,8 @@ export function parseIncomingWhatsApp(payload: unknown): IncomingWhatsAppMessage
 
   for (const entry of parsed.data.entry ?? []) {
     for (const change of entry.changes ?? []) {
+      const phoneNumberId = change.value.metadata?.phone_number_id;
+      const displayPhoneNumber = change.value.metadata?.display_phone_number;
       for (const raw of change.value.messages ?? []) {
         const message = textMessageSchema.safeParse(raw);
         if (!message.success) {
@@ -82,6 +93,8 @@ export function parseIncomingWhatsApp(payload: unknown): IncomingWhatsAppMessage
           from: message.data.from,
           messageId: message.data.id,
           text: message.data.text.body,
+          phoneNumberId,
+          displayPhoneNumber,
         };
       }
     }
@@ -90,14 +103,24 @@ export function parseIncomingWhatsApp(payload: unknown): IncomingWhatsAppMessage
   return null;
 }
 
-export async function sendWhatsAppText(to: string, body: string): Promise<void> {
+export type SendWhatsAppOptions = {
+  /** Override env WHATSAPP_PHONE_NUMBER_ID (multi-salon send). */
+  phoneNumberId?: string;
+};
+
+export async function sendWhatsAppText(
+  to: string,
+  body: string,
+  options: SendWhatsAppOptions = {},
+): Promise<void> {
   const env = getEnv();
-  if (!hasWhatsAppSendConfig()) {
+  const phoneNumberId = options.phoneNumberId?.trim() || env.WHATSAPP_PHONE_NUMBER_ID;
+  if (!env.WHATSAPP_ACCESS_TOKEN || !phoneNumberId) {
     logger.info("WhatsApp send skipped (no credentials)", { to });
     return;
   }
 
-  const url = `https://graph.facebook.com/v21.0/${env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
+  const url = `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`;
 
   try {
     const response = await fetch(url, {
@@ -123,7 +146,7 @@ export async function sendWhatsAppText(to: string, body: string): Promise<void> 
       throw new Error(`WhatsApp send failed: ${response.status}`);
     }
 
-    logger.info("WhatsApp message sent", { to });
+    logger.info("WhatsApp message sent", { to, phoneNumberId });
   } catch (error) {
     logger.error("WhatsApp send error", {
       error: error instanceof Error ? error.message : "unknown",
