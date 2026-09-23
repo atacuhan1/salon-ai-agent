@@ -5,10 +5,15 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 /**
  * Vercel Marketplace store was linked with envVarPrefix `database`,
  * so production may only expose `database_DATABASE_URL`. Map it for Prisma.
+ *
+ * Use bracket access so Next/Turbopack cannot replace the prefixed name with
+ * `undefined` at build time (static `process.env.foo` inlining).
  */
 function resolveDatabaseUrl(): void {
-  if (!process.env.DATABASE_URL && process.env.database_DATABASE_URL) {
-    process.env.DATABASE_URL = process.env.database_DATABASE_URL;
+  const env = process.env;
+  const prefixed = env["database_DATABASE_URL"] || env["database_POSTGRES_URL"];
+  if (!env.DATABASE_URL && prefixed) {
+    env.DATABASE_URL = prefixed;
   }
 }
 
