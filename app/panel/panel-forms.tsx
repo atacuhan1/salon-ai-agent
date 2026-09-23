@@ -41,11 +41,15 @@ export function SalonProfileForm({
   name,
   phone,
   address,
+  whatsappPhoneNumberId,
+  googleCalendarId,
   locked,
 }: {
   name: string;
   phone: string;
   address: string;
+  whatsappPhoneNumberId: string;
+  googleCalendarId: string;
   locked: boolean;
 }) {
   const router = useRouter();
@@ -83,6 +87,37 @@ export function SalonProfileForm({
         Adres
         <input name="address" defaultValue={address} disabled={locked} className={fieldClass} />
       </label>
+      <label className="block text-sm">
+        WhatsApp phone_number_id
+        <input
+          name="whatsappPhoneNumberId"
+          defaultValue={whatsappPhoneNumberId}
+          disabled={locked}
+          placeholder="Meta → WhatsApp → API Setup"
+          className={fieldClass}
+          inputMode="numeric"
+          autoComplete="off"
+        />
+      </label>
+      <p className="text-xs text-[#5a4144]">
+        Gelen mesajlar bu Meta <code>phone_number_id</code> ile bu salona yönlendirilir. Her salon
+        için ayrı hat bağlayın.
+      </p>
+      <label className="block text-sm">
+        Google Calendar ID
+        <input
+          name="googleCalendarId"
+          defaultValue={googleCalendarId}
+          disabled={locked}
+          placeholder="xxx@group.calendar.google.com"
+          className={fieldClass}
+          autoComplete="off"
+        />
+      </label>
+      <p className="text-xs text-[#5a4144]">
+        Service account e-postasını bu takvimde &quot;Make changes to events&quot; ile paylaşın.
+        Ortak env: <code>GOOGLE_CLIENT_EMAIL</code>, <code>GOOGLE_PRIVATE_KEY</code>.
+      </p>
       {error ? <p className="text-sm text-[#8e4b56]">{error}</p> : null}
       <button type="submit" disabled={pending || locked} className={buttonClass}>
         Kaydet

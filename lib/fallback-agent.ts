@@ -251,6 +251,7 @@ async function availabilityReply(
   const slots = await checkAvailability(date, service.durationMinutes, {
     salonKey: catalog.id,
     hours: catalog.workingHours,
+    googleCalendarId: catalog.googleCalendarId,
   });
   if (slots.length === 0) {
     return {
@@ -328,7 +329,11 @@ export async function runFallbackAgent(
       service.name,
       `${date}T${time}`,
       service.durationMinutes,
-      { salonKey: catalog.id, hours: catalog.workingHours },
+      {
+        salonKey: catalog.id,
+        hours: catalog.workingHours,
+        googleCalendarId: catalog.googleCalendarId,
+      },
     );
     if (!result.success) {
       return {

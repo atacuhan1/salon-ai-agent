@@ -11,7 +11,7 @@
     "db:up": "bash scripts/ensure-postgres.sh",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
-    "test": "tsx --test lib/slots.test.ts lib/timezone.test.ts lib/whatsapp.test.ts lib/calendar.test.ts lib/fallback-agent.test.ts lib/openai.test.ts lib/subscription.test.ts lib/slug.test.ts lib/salon-catalog.test.ts lib/saas-agent.test.ts lib/salon-persist.test.ts lib/auth-secret.test.ts lib/request-origin.test.ts"
+    "test": "tsx --test lib/slots.test.ts lib/timezone.test.ts lib/whatsapp.test.ts lib/calendar.test.ts lib/appointments.test.ts lib/fallback-agent.test.ts lib/openai.test.ts lib/subscription.test.ts lib/slug.test.ts lib/salon-catalog.test.ts lib/saas-agent.test.ts lib/salon-persist.test.ts lib/auth-secret.test.ts lib/request-origin.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

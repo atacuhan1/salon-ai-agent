@@ -12,10 +12,10 @@ Sıra: önce yayın, sonra gerçek randevu kanalı, sonra para.
 
 ## Randevu gerçeğe çıksın
 
-- [ ] Google Calendar’ı **salon bazlı** bağla (bellek randevu restart’ta gider)
-- [ ] Meta WhatsApp Cloud API + webhook production URL
-- [ ] WhatsApp numarası ↔ salon eşlemesi (tek hat yetmez)
-- [ ] Panelde bugünün randevu listesi (saat, hizmet, ad, telefon)
+- [x] Google Calendar’ı **salon bazlı** bağla (bellek randevu restart’ta gider) — Postgres + panel Calendar ID
+- [ ] Meta WhatsApp Cloud API + webhook production URL — kod hazır; Meta sırları Ata set eder
+- [x] WhatsApp numarası ↔ salon eşlemesi (tek hat yetmez) — `phone_number_id` → salon
+- [x] Panelde bugünün randevu listesi (saat, hizmet, ad, telefon)
 
 ## Para ve kilit
 

@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SalonProfileForm } from "@/app/panel/panel-forms";
 import { requireSalon } from "@/lib/auth";
+import { listAppointmentsForDay } from "@/lib/calendar";
 import { getAccessState } from "@/lib/subscription";
+import { formatSalonTime, todayInSalon } from "@/lib/timezone";
 
 export default async function PanelHomePage() {
   const salon = await requireSalon();
@@ -10,6 +12,8 @@ export default async function PanelHomePage() {
     redirect("/giris");
   }
   const access = getAccessState(salon);
+  const today = todayInSalon();
+  const appointments = await listAppointmentsForDay(salon.id, today);
 
   return (
     <div className="space-y-6">
@@ -31,10 +35,38 @@ export default async function PanelHomePage() {
           {access.label}
         </li>
       </ul>
+
+      <section className="space-y-3">
+        <h3 className="text-xl font-semibold">Bugünün randevuları</h3>
+        <p className="text-sm text-[#5a4144]">{today} · Europe/Istanbul</p>
+        {appointments.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-[#eadfd6] bg-[#fffaf6] p-4 text-sm text-[#5a4144]">
+            Bugün henüz randevu yok. WhatsApp veya müşteri sohbetinden alınan randevular burada
+            listelenir.
+          </p>
+        ) : (
+          <ul className="divide-y divide-[#eadfd6] overflow-hidden rounded-2xl border border-[#eadfd6] bg-[#fffaf6]">
+            {appointments.map((row) => (
+              <li
+                key={row.id}
+                className="grid gap-1 px-4 py-3 text-sm md:grid-cols-[5rem_1fr_1fr_10rem] md:items-center"
+              >
+                <span className="font-medium tabular-nums">{formatSalonTime(row.startAt)}</span>
+                <span>{row.serviceName}</span>
+                <span>{row.customerName}</span>
+                <span className="text-[#5a4144]">{row.customerPhone}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <SalonProfileForm
         name={salon.name}
         phone={salon.phone}
         address={salon.address}
+        whatsappPhoneNumberId={salon.whatsappPhoneNumberId ?? ""}
+        googleCalendarId={salon.googleCalendarId ?? ""}
         locked={!access.active}
       />
     </div>
