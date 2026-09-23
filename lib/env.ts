@@ -1,12 +1,22 @@
 import { z } from "zod";
 
-const optionalString = z
-  .string()
-  .optional()
-  .transform((value) => {
-    const trimmed = value?.trim();
-    return trimmed ? trimmed : undefined;
-  });
+/** Treat missing or blank env values as undefined so Zod defaults apply. */
+function blankToUndefined(value: unknown): unknown {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "string" && value.trim() === "") return undefined;
+  return value;
+}
+
+const optionalString = z.preprocess(
+  blankToUndefined,
+  z
+    .string()
+    .optional()
+    .transform((value) => {
+      const trimmed = value?.trim();
+      return trimmed ? trimmed : undefined;
+    }),
+);
 
 const envSchema = z.object({
   OPENAI_API_KEY: optionalString,
@@ -15,16 +25,37 @@ const envSchema = z.object({
   GOOGLE_PRIVATE_KEY: optionalString,
   SUPABASE_URL: optionalString,
   SUPABASE_SERVICE_ROLE_KEY: optionalString,
-  WHATSAPP_VERIFY_TOKEN: z.string().min(1).default("salon-dev-verify"),
+  WHATSAPP_VERIFY_TOKEN: z.preprocess(
+    blankToUndefined,
+    z.string().min(1).default("salon-dev-verify"),
+  ),
   WHATSAPP_ACCESS_TOKEN: optionalString,
   WHATSAPP_PHONE_NUMBER_ID: optionalString,
   WHATSAPP_APP_SECRET: optionalString,
-  SALON_TIMEZONE: z.string().min(1).default("Europe/Istanbul"),
-  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
-  NODE_ENV: z.enum(["development", "test", "production"]).optional(),
-  OPENAI_MODEL: z.string().min(1).default("gpt-4o-mini"),
-  OPENAI_MAX_TOKENS: z.coerce.number().int().min(64).max(1000).default(220),
-  OPENAI_HISTORY_LIMIT: z.coerce.number().int().min(2).max(20).default(4),
+  SALON_TIMEZONE: z.preprocess(
+    blankToUndefined,
+    z.string().min(1).default("Europe/Istanbul"),
+  ),
+  LOG_LEVEL: z.preprocess(
+    blankToUndefined,
+    z.enum(["debug", "info", "warn", "error"]).default("info"),
+  ),
+  NODE_ENV: z.preprocess(
+    blankToUndefined,
+    z.enum(["development", "test", "production"]).optional(),
+  ),
+  OPENAI_MODEL: z.preprocess(
+    blankToUndefined,
+    z.string().min(1).default("gpt-4o-mini"),
+  ),
+  OPENAI_MAX_TOKENS: z.preprocess(
+    blankToUndefined,
+    z.coerce.number().int().min(64).max(1000).default(220),
+  ),
+  OPENAI_HISTORY_LIMIT: z.preprocess(
+    blankToUndefined,
+    z.coerce.number().int().min(2).max(20).default(4),
+  ),
   AUTH_SECRET: optionalString,
   DATABASE_URL: optionalString,
 });
@@ -40,8 +71,13 @@ export function getEnv(): AppEnv {
 
   const env = process.env;
   // Prefer canonical DATABASE_URL; fall back to Marketplace-prefixed store vars.
+  // Static refs keep Marketplace keys included in the serverless env.
+  const marketplaceUrl = process.env.database_DATABASE_URL;
+  const marketplacePostgres = process.env.database_POSTGRES_URL;
   const databaseUrl =
     env.DATABASE_URL ||
+    marketplaceUrl ||
+    marketplacePostgres ||
     env["database_DATABASE_URL"] ||
     env["database_POSTGRES_URL"];
 
