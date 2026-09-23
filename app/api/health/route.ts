@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { getDatabaseUrlStatus, getPrisma } from "@/lib/db";
 import {
   hasGoogleCalendarConfig,
   hasOpenAIConfig,
@@ -9,18 +9,29 @@ import {
 import { salonTimeZone } from "@/lib/timezone";
 
 export async function GET() {
+  const dbStatus = getDatabaseUrlStatus();
   let database = false;
+  let databaseError: string | undefined;
+
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await getPrisma().$queryRaw`SELECT 1`;
     database = true;
-  } catch {
+  } catch (error) {
     database = false;
+    databaseError =
+      error instanceof Error ? error.message : "database_unavailable";
   }
 
   return NextResponse.json({
     ok: database,
     timezone: salonTimeZone(),
     database,
+    databaseError: database ? undefined : databaseError,
+    dbEnv: {
+      hasDatabaseUrl: dbStatus.hasDatabaseUrl,
+      hasPrefixedDatabaseUrl: dbStatus.hasPrefixedDatabaseUrl,
+      relatedEnvKeys: dbStatus.relatedEnvKeys,
+    },
     providers: {
       openai: hasOpenAIConfig(),
       googleCalendar: hasGoogleCalendarConfig(),
