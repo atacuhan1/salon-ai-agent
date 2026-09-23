@@ -8,11 +8,27 @@ const bodySchema = z.object({
   action: z.enum(["activate", "cancel"]),
 });
 
+function billingSimulationEnabled(): boolean {
+  if (process.env.BILLING_SIMULATION === "1") {
+    return true;
+  }
+  return process.env.NODE_ENV !== "production";
+}
+
 export async function POST(request: Request) {
   try {
     const { salon } = await requireOwner({ allowExpired: true });
     const body = bodySchema.parse(await request.json());
     if (body.action === "activate") {
+      if (!billingSimulationEnabled()) {
+        return NextResponse.json(
+          {
+            error:
+              "Simüle abonelik production'da kapalı. Ödeme sağlayıcısı bağlanınca aktifleşecek.",
+          },
+          { status: 403 },
+        );
+      }
       const paidUntil = paidUntilFrom();
       const updated = await prisma.salon.update({
         where: { id: salon.id },

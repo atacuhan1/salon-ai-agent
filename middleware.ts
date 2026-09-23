@@ -1,11 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { SESSION_COOKIE } from "@/lib/auth-constants";
-
-function secretKey(): Uint8Array {
-  const secret = process.env.AUTH_SECRET || "dev-salon-ai-change-me-in-production";
-  return new TextEncoder().encode(secret);
-}
+import { authSecretKey } from "@/lib/auth-secret";
 
 export async function middleware(request: NextRequest) {
   const path = decodeURIComponent(request.nextUrl.pathname);
@@ -28,7 +24,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(login);
   }
   try {
-    await jwtVerify(token, secretKey());
+    await jwtVerify(token, authSecretKey());
     return NextResponse.next();
   } catch {
     const login = new URL("/giris", request.url);
