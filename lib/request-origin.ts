@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 
 /**
  * Same-origin check for cookie-authenticated mutating APIs (CSRF defense-in-depth).
- * Prefers Origin; falls back to Referer. In production, missing/mismatched values fail.
+ * Prefers Origin; falls back to Referer. Expected origin comes from Host /
+ * X-Forwarded-* (browser view), not only request.url (which Next may rewrite).
+ * In production, missing/mismatched values fail.
  * In development, missing Origin/Referer is allowed for local tooling.
  */
 
@@ -17,11 +19,31 @@ function headerOrigin(value: string | null): string | null {
   }
 }
 
+/** Origin the browser thinks it is talking to (Host / forwarded headers). */
+export function expectedRequestOrigin(request: Request): string {
+  const url = new URL(request.url);
+  const forwardedHost = request.headers
+    .get("x-forwarded-host")
+    ?.split(",")[0]
+    ?.trim();
+  const host =
+    forwardedHost || request.headers.get("host")?.trim() || url.host;
+  const forwardedProto = request.headers
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    ?.trim();
+  const protocol = (forwardedProto || url.protocol.replace(":", "")).replace(
+    /:$/,
+    "",
+  );
+  return `${protocol}://${host}`;
+}
+
 export function isSameOriginRequest(
   request: Request,
   options?: { allowMissingInDev?: boolean },
 ): boolean {
-  const expected = new URL(request.url).origin;
+  const expected = expectedRequestOrigin(request);
   const origin = headerOrigin(request.headers.get("origin"));
   if (origin) {
     return origin === expected;
