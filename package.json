@@ -2,7 +2,7 @@
   "name": "salon-ai-agent",
   "version": "0.1.0",
   "private": true,
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "sh -c 'export DATABASE_URL=\"${DATABASE_URL:-$database_DATABASE_URL}\"; prisma migrate deploy && next build'",
