@@ -12,7 +12,8 @@ export default async function StaffPage() {
     <div className="space-y-4">
       <h2 className="text-3xl font-semibold">Çalışanlar</h2>
       <p className="text-[#5a4144]">
-        Kim hangi gün çalışıyorsa işaretleyin. O gün kimse yoksa asistan kapalı der.
+        Kim hangi gün çalışıyorsa işaretleyin. O gün kimse yoksa asistan
+        “bugün kapalıyız” der.
       </p>
       <StaffManager staff={salon.staff} locked={!getAccessState(salon).active} />
     </div>

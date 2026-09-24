@@ -27,7 +27,7 @@ export async function resolveCatalog(salonSlug?: string): Promise<SalonCatalog> 
   }
   if (!loaded.accessActive) {
     throw new SalonAccessError(
-      "Bu salonun aboneliği aktif değil. Randevu asistanı kapalı.",
+      "Bu salon şu an randevu asistanını kullanmıyor.",
       "expired",
     );
   }

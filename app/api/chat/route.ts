@@ -41,7 +41,10 @@ export async function POST(request: Request) {
     const body = bodySchema.parse(json);
 
     if (!rateLimit(clientKey(request, body.salonSlug))) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+      return NextResponse.json(
+        { error: "Çok fazla istek gönderildi. Lütfen biraz sonra tekrar deneyin." },
+        { status: 429 },
+      );
     }
 
     // Prefer client session when present; otherwise mint an opaque id (do not use shared demo phones).
@@ -64,8 +67,11 @@ export async function POST(request: Request) {
       );
     }
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid chat payload" }, { status: 400 });
+      return NextResponse.json({ error: "Mesaj gönderilemedi. Lütfen tekrar deneyin." }, { status: 400 });
     }
-    return NextResponse.json({ error: "Chat failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Asistan şu an yanıt veremiyor. Lütfen biraz sonra tekrar deneyin." },
+      { status: 500 },
+    );
   }
 }

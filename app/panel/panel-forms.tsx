@@ -76,7 +76,7 @@ export function SalonProfileForm({
     >
       <h2 className="text-xl font-semibold">Salon bilgisi</h2>
       <label className="block text-sm">
-        Ad
+        Salon adı
         <input name="name" defaultValue={name} disabled={locked} className={fieldClass} />
       </label>
       <label className="block text-sm">
@@ -88,35 +88,37 @@ export function SalonProfileForm({
         <input name="address" defaultValue={address} disabled={locked} className={fieldClass} />
       </label>
       <label className="block text-sm">
-        WhatsApp phone_number_id
+        WhatsApp hat numarası kimliği (isteğe bağlı)
         <input
           name="whatsappPhoneNumberId"
           defaultValue={whatsappPhoneNumberId}
           disabled={locked}
-          placeholder="Meta → WhatsApp → API Setup"
+          placeholder="Bağlantı hazır olduğunda buraya yazın"
           className={fieldClass}
           inputMode="numeric"
           autoComplete="off"
         />
       </label>
       <p className="text-xs text-[#5a4144]">
-        Gelen mesajlar bu Meta <code>phone_number_id</code> ile bu salona yönlendirilir. Her salon
-        için ayrı hat bağlayın.
+        WhatsApp üzerinden mesaj almak için salona özel hat kimliğini buraya
+        yazarsınız. Bağlantı henüz tüm salonlar için açık değilse bu alanı boş
+        bırakabilirsiniz; müşteriler yine de sohbet sayfanızdan randevu alabilir.
       </p>
       <label className="block text-sm">
-        Google Calendar ID
+        Google Takvim adresi (isteğe bağlı)
         <input
           name="googleCalendarId"
           defaultValue={googleCalendarId}
           disabled={locked}
-          placeholder="xxx@group.calendar.google.com"
+          placeholder="ornek@group.calendar.google.com"
           className={fieldClass}
           autoComplete="off"
         />
       </label>
       <p className="text-xs text-[#5a4144]">
-        Service account e-postasını bu takvimde &quot;Make changes to events&quot; ile paylaşın.
-        Ortak env: <code>GOOGLE_CLIENT_EMAIL</code>, <code>GOOGLE_PRIVATE_KEY</code>.
+        Randevuların takviminize düşmesi için Google Takvim adresinizi girin.
+        Takvimi, size verilen salon AI hesabıyla düzenleme izniyle paylaşmanız
+        gerekir. Takvim bağlanmazsa randevular yine panelde listelenir.
       </p>
       {error ? <p className="text-sm text-[#8e4b56]">{error}</p> : null}
       <button type="submit" disabled={pending || locked} className={buttonClass}>
@@ -193,12 +195,18 @@ export function ServiceManager({
         </button>
         <input
           name="keywords"
-          placeholder="Ek kelimeler, virgülle"
+          placeholder="Müşterinin söyleyebileceği diğer adlar, virgülle"
           disabled={locked}
           className={`${fieldClass} md:col-span-4`}
         />
       </form>
       {error ? <p className="text-sm text-[#8e4b56]">{error}</p> : null}
+      {services.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-[#eadfd6] bg-[#fffaf6] p-4 text-sm text-[#5a4144]">
+          Henüz hizmet yok. Yukarıdan ad, süre ve ücret ekleyin; asistan bunları
+          müşteriye söyler.
+        </p>
+      ) : null}
       <ul className="space-y-3">
         {services.map((service) => (
           <li
@@ -299,6 +307,12 @@ export function StaffManager({
         </button>
       </form>
       {error ? <p className="text-sm text-[#8e4b56]">{error}</p> : null}
+      {staff.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-[#eadfd6] bg-[#fffaf6] p-4 text-sm text-[#5a4144]">
+          Henüz çalışan yok. En az bir kişi ekleyin; yoksa asistan müsait saat
+          öneremez.
+        </p>
+      ) : null}
       <ul className="space-y-3">
         {staff.map((member) => {
           const days = JSON.parse(member.weekdays) as number[];
@@ -424,7 +438,7 @@ export function BillingActions({ locked }: { locked: boolean }) {
   return (
     <div className="space-y-3">
       <button type="button" className={buttonClass} onClick={() => run("activate")}>
-        {locked ? "Aboneliği etkinleştir" : "Aboneliği 30 gün uzat"}
+        {locked ? "Aboneliği başlat" : "Aboneliği 30 gün uzat"}
       </button>
       {!locked ? (
         <button
@@ -437,9 +451,9 @@ export function BillingActions({ locked }: { locked: boolean }) {
       ) : null}
       {error ? <p className="text-sm text-[#8e4b56]">{error}</p> : null}
       <p className="text-sm text-[#5a4144]">
-        Production’da simüle ödeme kapalıdır (gerçek ödeme sağlayıcısı bekleniyor). Geliştirme
-        ortamında veya BILLING_SIMULATION=1 ile deneme etkinleştirmesi yapılabilir. İptal
-        edilince müşteri sohbeti kapanır.
+        Online ödeme henüz bağlı değil. Bu düğmeler deneme veya abonelik
+        süresini yönetmenize yarar; iptal edince müşteri asistanı kapanır.
+        Gerçek kart ödemesi yakında eklenecek.
       </p>
     </div>
   );

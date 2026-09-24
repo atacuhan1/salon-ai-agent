@@ -15,7 +15,7 @@ const updateSchema = z.object({
     .string()
     .trim()
     .max(64)
-    .regex(/^[0-9]*$/, "Meta phone_number_id yalnızca rakam olmalı")
+    .regex(/^[0-9]*$/, "WhatsApp hat kimliği yalnızca rakam olmalı")
     .optional()
     .transform((value) => (value === "" ? null : value)),
   googleCalendarId: z
@@ -70,7 +70,7 @@ export async function PUT(request: Request) {
       });
       if (clash) {
         return NextResponse.json(
-          { error: "Bu WhatsApp phone_number_id başka bir salona kayıtlı." },
+          { error: "Bu WhatsApp hat kimliği başka bir salona kayıtlı." },
           { status: 409 },
         );
       }

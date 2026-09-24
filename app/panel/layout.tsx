@@ -45,7 +45,7 @@ export default async function PanelLayout({
             </Link>
           ))}
           <Link href={`/s/${salon.slug}`} className="px-4 py-2 text-[#8e4b56] underline">
-            Müşteri sohbeti
+            Müşteri randevu sayfası
           </Link>
           <LogoutButton />
         </nav>
@@ -53,9 +53,10 @@ export default async function PanelLayout({
       <section className="min-w-0 flex-1">
         {!access.active ? (
           <p className="mb-4 rounded-2xl bg-[#f6ebe4] p-4 text-[#8e4b56]">
-            Abonelik yok: müşteriler asistanı kullanamaz, ayar değiştirilemez.{" "}
+            Deneme veya aboneliğiniz bitti: müşteriler asistanı kullanamaz,
+            ayarları değiştiremezsiniz.{" "}
             <Link href="/panel/abonelik" className="underline">
-              Ödemeyi tamamlayın
+              Abonelik sayfasına gidin
             </Link>
             .
           </p>

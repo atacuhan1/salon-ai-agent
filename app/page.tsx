@@ -3,15 +3,15 @@ import Link from "next/link";
 const features = [
   {
     title: "Hizmet ve ücret",
-    body: "Protez, kalıcı oje, bakımlar… hangisini verdiğinizi ve kaç TL olduğunu siz yazarsınız. Asistan uydurmaz.",
+    body: "Protez, kalıcı oje, bakımlar… verdiğiniz hizmetleri ve fiyatları panelden yazın. Asistan yalnızca bunları söyler.",
   },
   {
     title: "Çalışan ve günler",
-    body: "Kim hangi gün çalışıyor, kaça kadar açık? Salon saatlerini ve personeli panelden değiştirin.",
+    body: "Kim hangi gün çalışıyor, salon kaça kadar açık? Saatleri ve personeli panelden güncelleyin.",
   },
   {
-    title: "Abonelik kilidi",
-    body: "Ödeme yoksa müşteri sohbeti kapanır. Deneme 14 gün; sonra yalnızca ödeyen salonlar açık kalır.",
+    title: "Abonelik ile açık kalır",
+    body: "14 gün ücretsiz deneyin. Deneme veya abonelik bitince müşteri asistanı kapanır; siz panelden yenilersiniz.",
   },
 ];
 
@@ -35,25 +35,25 @@ export default function HomePage() {
 
       <section className="max-w-3xl">
         <h1 className="text-5xl leading-tight font-semibold md:text-6xl">
-          Her salon kendi saatini, personelini ve fiyatını girsin.
+          Müşterileriniz sohbetle randevu alsın.
         </h1>
         <p className="mt-5 max-w-xl text-lg leading-relaxed text-[#5a4144]">
-          Siz her müşteri için kod yazmazsınız. Salon sahibi basit panelden
-          ayarlar; müşterileri WhatsApp asistanından randevu alır. Abonelik
-          bitince erişim kesilir.
+          Salon AI, hizmetlerinizi, saatlerinizi ve çalışanlarınızı panelden
+          yönetmenizi sağlar. Müşteriler salon sayfanızdaki asistanla fiyat
+          sorar ve müsait saat alır.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/kayit"
             className="rounded-full bg-[#8e4b56] px-6 py-3 text-sm tracking-wide text-white uppercase"
           >
-            Salon kaydı
+            Salonumu kaydet
           </Link>
           <Link
             href="/demo"
             className="rounded-full border border-[#eadfd6] px-6 py-3 text-sm"
           >
-            Örnek sohbeti gör
+            Örnek sohbeti dene
           </Link>
         </div>
       </section>
