@@ -1,17 +1,81 @@
 # salon-ai-agent
 
-WhatsApp üzerinden butik tırnak / güzellik salonları için randevu alan AI asistanı. Salon sahipleri hizmet, fiyat, personel ve çalışma saatlerini panelden girer. Abonelik yoksa asistan kapanır.
+Butik tırnak / güzellik salonları için WhatsApp ve web üzerinden randevu alan AI asistanı.
 
-- Next.js 15 App Router + TypeScript
-- OpenAI `gpt-4o-mini` function calling (`checkAvailability`, `createAppointment`)
-- Salon paneli: `/kayit`, `/giris`, `/panel`
-- Müşteri sohbeti: `/s/<salon-slug>` (abonelik kilitliyse 402)
-- Google Calendar, Supabase, Meta WhatsApp (anahtar yoksa mock)
-- Postgres + Prisma (salon kaydı yayında kalır; SQLite yok)
+Salon sahibi paneldan hizmet, fiyat, personel ve çalışma saatlerini girer. Deneme veya abonelik bitince müşteri sohbeti kilitlenir — asistan kapanır.
 
-Zaman dilimi her yerde **Europe/Istanbul (UTC+3)**. Yol haritası: [TODO.md](TODO.md).
+**Demo:** [https://salon-ai-agent-sens6.vercel.app](https://salon-ai-agent-sens6.vercel.app)
 
-## Geliştirme
+---
+
+## Problem
+
+Küçük salonlar randevuyu WhatsApp’ta elle yönetiyor. Mesai dışında gelen “yarın manikür var mı?” mesajları kaçıyor; takvim ve sohbet ayrı duruyor. Bu proje, salon sahibi kendi kataloğunu panelden tanımlasın, müşteri de WhatsApp veya web sohbetinden müsaitlik sorup randevu alsın diye yazıldı.
+
+## Mimari
+
+```
+WhatsApp Cloud API ──► POST /api/webhook ──┐
+                                           ├─► abonelik kontrolü ─► agent
+Web /s/<slug> | /demo ─► POST /api/chat ───┘         │
+                                                     ├─ checkAvailability
+                                                     └─ createAppointment
+                                                           │
+                                              Postgres (kaynak) ± Google Calendar
+```
+
+- **Giriş:** Meta webhook (`phone_number_id` → salon) veya tarayıcı sohbeti.
+- **Kapı:** Salon Postgres’ten yüklenir; abonelik / deneme bitmişse web `402`, WhatsApp kilit mesajı.
+- **Agent:** OpenAI function calling (`gpt-4o-mini`) veya anahtar yoksa aynı tool’ları kullanan kural tabanlı fallback.
+- **Takvim:** Gerçek salon randevuları Postgres’te kalır; Google service account + salon Calendar ID varsa takvime de yazılır.
+- **Panel:** Oturum çerezi + CSRF/origin kontrollü `/api/salon/*` ve `/api/auth/*`.
+- **Zaman dilimi:** her yerde `Europe/Istanbul` (UTC+3).
+
+## Ne çalışıyor
+
+| Alan | Durum |
+| --- | --- |
+| Salon kaydı / giriş (`/kayit`, `/giris`) | ✅ 14 gün deneme |
+| Panel: hizmet, çalışan, saat, özet | ✅ |
+| Bugünün randevu listesi (panel) | ✅ Postgres |
+| Web sohbet (`/s/<slug>`, `/demo`) | ✅ |
+| Müsaitlik + randevu oluşturma (tool’lar) | ✅ |
+| Abonelik kilidi (süresi dolunca sohbet kapalı) | ✅ |
+| WhatsApp webhook imza + verify (fail-closed) | ✅ kod hazır |
+| `phone_number_id` → salon eşlemesi | ✅ panel alanı |
+| Google Calendar (salon bazlı) | ✅ anahtar + Calendar ID varsa |
+| OpenAI yoksa fallback agent | ✅ |
+| Supabase yoksa bellek içi sohbet geçmişi | ✅ |
+| `GET /api/health` | ✅ |
+
+## Bilerek eksik / yol haritası
+
+Dürüstçe henüz yok veya dış bağımlılık bekliyor:
+
+- **WhatsApp E2E:** Meta `WHATSAPP_*` secret’ları + production callback gerekir; kod ve URL hazır, gerçek hat testi Ata’nın Meta env’iyle.
+- **Ödeme:** Stripe / iyzico yok. Panelde “ödemeyi simüle et” yalnızca development veya `BILLING_SIMULATION=1`; production’da 403.
+- Belirli ustadan randevu (personel müsaitliğiyle slot süzme).
+- İptal / erteleme (slot’u geri açma).
+- WhatsApp hatırlatma (1 gün / ~2 saat önce).
+- Süper-admin paneli, salon bazlı OpenAI maliyet metrikleri.
+- Kalıcı sohbet geçmişi için Supabase tablosu (kod yolu var; varsayılan bellek).
+
+Ürün listesi: [TODO.md](TODO.md).
+
+## Tech stack
+
+| Katman | Seçim |
+| --- | --- |
+| Framework | Next.js 15 (App Router) + TypeScript + React 19 |
+| AI | OpenAI SDK (`gpt-4o-mini`, function calling) |
+| DB | Postgres + Prisma |
+| Takvim | Google Calendar API (service account) |
+| Mesajlaşma | Meta WhatsApp Cloud API |
+| Opsiyonel geçmiş | Supabase |
+| Auth | JWT çerez (`jose`) + `bcryptjs` |
+| Deploy | Vercel (`vercel.json` → migrate + build) |
+
+## Hızlı başlangıç
 
 ```bash
 cp .env.example .env.local
@@ -22,14 +86,11 @@ npm run dev
 ```
 
 - Uygulama: http://localhost:3000
-- Salon kaydı: `/kayit` (14 gün deneme)
-- Panel: `/panel` (hizmet, çalışan, saat, abonelik)
-- Örnek sohbet: `/demo`
+- Salon kaydı: `/kayit` · Panel: `/panel` · Demo sohbet: `/demo`
 - Müşteri sohbeti: `/s/<slug>`
 - Sağlık: `GET /api/health` (detay için `HEALTH_DETAILS=1`)
 - Sabit mesajlı tool testi: `GET /api/test-chat` (yalnızca development)
-- Sohbet: `POST /api/chat` `{ "sessionId": "opsiyonel", "message": "…", "salonSlug": "opsiyonel" }`
-- WhatsApp doğrulama: `GET /api/webhook?hub.mode=subscribe&hub.verify_token=<WHATSAPP_VERIFY_TOKEN>&hub.challenge=123`
+- WhatsApp verify: `GET /api/webhook?hub.mode=subscribe&hub.verify_token=<WHATSAPP_VERIFY_TOKEN>&hub.challenge=123`
 
 ```bash
 npm test
@@ -37,101 +98,80 @@ npm run lint
 npm run build
 ```
 
+Sırlar koda gömülmez. Yerel Docker Postgres: kullanıcı/şifre `salon` / `salon` (`docker-compose.yml`) — yalnızca geliştirme.
+
 ## Ortam değişkenleri
 
-[`.env.example`](.env.example) dosyasına bakın. Sırlar koda gömülmez.
+Ayrıntılar: [`.env.example`](.env.example).
 
 | Değişken | Kullanım |
 | --- | --- |
-| `OPENAI_API_KEY` | Yoksa kural tabanlı fallback aynı tool’ları çağırır |
-| `OPENAI_MODEL` | Varsayılan `gpt-4o-mini` (en ucuz uygun model) |
-| `OPENAI_MAX_TOKENS` | Cevap tavanı, varsayılan `220` |
-| `OPENAI_HISTORY_LIMIT` | Modele giden son mesaj sayısı, varsayılan `4` |
-| `GOOGLE_CLIENT_EMAIL`, `GOOGLE_PRIVATE_KEY` | Service account; salon calendar ID panelden |
+| `OPENAI_API_KEY` | Yoksa kural tabanlı fallback |
+| `OPENAI_MODEL` | Varsayılan `gpt-4o-mini` |
+| `OPENAI_MAX_TOKENS` / `OPENAI_HISTORY_LIMIT` | Cevap tavanı / geçmiş penceresi |
+| `GOOGLE_CLIENT_EMAIL`, `GOOGLE_PRIVATE_KEY` | Service account; salon Calendar ID panelden |
 | `GOOGLE_CALENDAR_ID` | Yalnızca demo / tek salon fallback |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Yoksa bellek içi sohbet geçmişi |
-| `WHATSAPP_VERIFY_TOKEN` | GET webhook handshake (≥16 char, production) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Yoksa bellek içi geçmiş |
+| `WHATSAPP_VERIFY_TOKEN` | GET handshake (≥16 char, production) |
 | `WHATSAPP_ACCESS_TOKEN` | Graph API gönderim |
-| `WHATSAPP_PHONE_NUMBER_ID` | Gönderim fallback (salon eşlemesi panelden) |
-| `WHATSAPP_APP_SECRET` | `X-Hub-Signature-256` (yoksa webhook reddedilir) |
+| `WHATSAPP_PHONE_NUMBER_ID` | Gönderim fallback (asıl eşleme panelden) |
+| `WHATSAPP_APP_SECRET` | `X-Hub-Signature-256` (yoksa POST reddedilir) |
+| `DATABASE_URL` | Postgres (`postgresql://…`) |
+| `AUTH_SECRET` | Panel oturumu (production’da güçlü rastgele) |
 | `SALON_TIMEZONE` | `Europe/Istanbul` |
-| `DATABASE_URL` | Postgres bağlantısı (`postgresql://...`). SQLite desteklenmez |
-| `AUTH_SECRET` | Panel oturum çerezi |
 
-Ödeme henüz Stripe değil; panelde **ödemeyi simüle et** 30 gün açar, **iptal** müşteri sohbetini kilitler.
-
-`GOOGLE_PRIVATE_KEY` değerindeki `\n` karakterleri env içinde escaped olabilir; kod bunları çözer. JSON key dosyasını repo’ya koymayın.
+`GOOGLE_PRIVATE_KEY` içindeki `\n` escape’leri kodda çözülür. JSON key dosyasını repo’ya koymayın.
 
 ## Google Calendar
 
 1. Google Cloud’da Calendar API’yi açın.
-2. Service account oluşturup key alın; `GOOGLE_CLIENT_EMAIL` + `GOOGLE_PRIVATE_KEY` (Vercel env).
+2. Service account + key → `GOOGLE_CLIENT_EMAIL` / `GOOGLE_PRIVATE_KEY` (Vercel env).
 3. Her salon kendi takvimini service account e-postasına **Make changes to events** ile paylaşır.
-4. Salon paneli → Özet → **Google Calendar ID** alanına takvim ID’sini yazın.
-5. Randevular her zaman Postgres’te kalır (panel listesi); Google bağlıysa ayrıca takvime yazılır.
-
-`GOOGLE_CALENDAR_ID` env yalnızca demo / tek-kiracı fallback içindir. Çok salon için panel alanını kullanın.
-
-## Supabase
-
-```sql
-create table if not exists conversations (
-  id uuid primary key default gen_random_uuid(),
-  session_id text not null,
-  role text not null check (role in ('user', 'assistant', 'system')),
-  content text not null,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists conversations_session_created_idx
-  on conversations (session_id, created_at desc);
-```
-
-Row Level Security kullanıyorsanız service role backend’den yazar. `session_id` WhatsApp telefon numarasıdır.
+4. Panel → Özet → **Google Calendar ID**.
+5. Randevular her zaman Postgres’te kalır; Google bağlıysa takvime de yazılır.
 
 ## WhatsApp
 
-Production callback URL:
+Production callback:
 
 `https://salon-ai-agent-sens6.vercel.app/api/webhook`
 
-Meta App Dashboard → WhatsApp → Configuration:
+Meta App → WhatsApp → Configuration:
 
-- Callback URL: yukarıdaki production URL
-- Verify token: `WHATSAPP_VERIFY_TOKEN` (güçlü rastgele; production’da zayıf/placeholder reddedilir)
-- `messages` alanına abone olun
-- App Secret → `WHATSAPP_APP_SECRET` (imzasız POST reddedilir)
-- Access token + (isteğe bağlı varsayılan) Phone number ID → `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`
+- Callback URL + verify token (`WHATSAPP_VERIFY_TOKEN`)
+- `messages` aboneliği
+- App Secret → `WHATSAPP_APP_SECRET`
+- Access token (+ isteğe bağlı varsayılan phone number ID)
 
-**Salon eşlemesi:** webhook `metadata.phone_number_id` okur ve panelde kayıtlı `whatsappPhoneNumberId` ile salonu bulur. Tek env satırı yetmez — her salon kendi Meta `phone_number_id` değerini panele yazar. Eşleşmeyen hatta uyarı mesajı gider.
+Webhook `metadata.phone_number_id` ile paneldeki `whatsappPhoneNumberId` alanını eşler. Tek env satırı yetmez; her salon kendi Meta `phone_number_id` değerini panele yazar.
 
 ## Vercel
 
-1. Neon, Supabase veya Vercel Postgres’te bir veritabanı açın.
-2. `DATABASE_URL` (gerekirse pooler) ve `AUTH_SECRET` env’lerini ekleyin. Pooler kullanıyorsanız migrate için unpooled URL’yi build’de `DATABASE_URL` yapın veya `prisma migrate deploy`’u doğrudan bağlantı ile çalıştırın.
-3. Deploy. `vercel.json` build sırasında `prisma migrate deploy` çalıştırır; tablolar oluşur, salon kayıtları diskte değil Postgres’te kalır.
+1. Neon / Supabase / Vercel Postgres → `DATABASE_URL` (+ gerekirse unpooled migrate URL).
+2. `AUTH_SECRET`, isteğe bağlı OpenAI / Google / WhatsApp / Supabase.
+3. Deploy. `vercel.json` build’de `prisma migrate deploy` çalıştırır.
 
-Yerel Docker:
+Yerel:
 
 ```bash
 docker compose up -d
 npx prisma migrate deploy
 ```
 
-Env’leri Vercel projesine ekleyin. Webhook URL’si production domain olmalıdır. Gereksiz debug log’u yoktur; `LOG_LEVEL=info|warn|error`.
-
 ## Klasörler
 
 ```
-app/panel/
-app/s/[slug]/page.tsx
-app/api/webhook/route.ts
-app/api/chat/route.ts
-app/api/test-chat/route.ts
-lib/calendar.ts
-lib/openai.ts
-lib/salon-store.ts
-lib/subscription.ts
-prompts/salon-rules.ts
+app/panel/                 # salon sahibi paneli
+app/s/[slug]/              # kiracı web sohbeti
+app/api/webhook/           # Meta WhatsApp
+app/api/chat/              # web agent
+lib/calendar.ts            # müsaitlik + Google
+lib/openai.ts / agent.ts   # tool calling + fallback
+lib/subscription.ts        # deneme / kilit
+prompts/salon-rules.ts     # sistem kuralları
 prisma/migrations/
 ```
+
+## Lisans
+
+[MIT](LICENSE) © 2026 Ata Cuhan (atacuhan1)

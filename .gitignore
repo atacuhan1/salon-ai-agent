@@ -23,6 +23,12 @@
 # misc
 .DS_Store
 *.pem
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
 
 # debug
 npm-debug.log*
@@ -30,10 +36,16 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
+# env files / local secrets (never commit real values)
 .env
 .env.*
 !.env.example
+*.env.local
+.envrc
+credentials.json
+service-account*.json
+*-service-account.json
+google-credentials*.json
 
 # sqlite
 prisma/*.db
