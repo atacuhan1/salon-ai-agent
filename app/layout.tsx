@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Geist_Mono } from "next/font/google";
+import { SiteFooter } from "@/app/components/site-footer";
 import "./globals.css";
 
 const display = Cormorant_Garamond({
@@ -26,8 +27,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr">
-      <body className={`${display.variable} ${geistMono.variable} antialiased`}>
-        {children}
+      <body
+        className={`${display.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
+      >
+        <div className="flex flex-1 flex-col">{children}</div>
+        <SiteFooter />
       </body>
     </html>
   );
