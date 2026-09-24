@@ -5,10 +5,11 @@ export default function RegisterPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-4 py-12">
       <p className="text-sm tracking-[0.28em] uppercase text-[#8e4b56]">Salon paneli</p>
-      <h1 className="mt-3 text-4xl font-semibold">Salonunuzu kaydedin</h1>
+      <h1 className="mt-3 text-4xl font-semibold">Demo hesabı oluşturun</h1>
       <p className="mt-3 text-[#5a4144]">
-        Adınızı, iletişim bilgilerinizi ve şifrenizi girin. Sonra hizmet, fiyat,
-        çalışan ve saatleri panelden ekleyebilirsiniz. İlk 14 gün ücretsiz.
+        Bu kişisel bir portföy demosudur; ücretli hizmet satılmaz. E-posta ve
+        şifrenizle kayıt olun; panelde hizmet, fiyat, çalışan ve saat
+        deneyebilirsiniz. Gerçek müşteri verisi girmeyin.
       </p>
       <div className="mt-8 rounded-3xl border border-[#eadfd6] bg-[#fffaf6] p-6">
         <AuthForm mode="register" />

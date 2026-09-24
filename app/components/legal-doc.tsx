@@ -38,11 +38,3 @@ export function LegalSection({
     </section>
   );
 }
-
-export function Placeholder({ children }: { children: ReactNode }) {
-  return (
-    <span className="rounded bg-[#f6ebe4] px-1.5 py-0.5 font-medium text-[#8e4b56]">
-      {children}
-    </span>
-  );
-}
