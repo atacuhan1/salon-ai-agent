@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createSessionToken, setSessionCookie, verifyPassword } from "@/lib/auth";
+import { verifyPassword } from "@/lib/auth";
 import { toErrorResponse } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
+import { createAndSendEmailChallenge } from "@/lib/email-auth-challenge";
+import { rejectIfCrossOrigin } from "@/lib/request-origin";
 
 const bodySchema = z.object({
   email: z.string().trim().email(),
@@ -10,6 +12,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const blocked = rejectIfCrossOrigin(request);
+  if (blocked) return blocked;
+
   try {
     const body = bodySchema.parse(await request.json());
     const salon = await prisma.salon.findUnique({
@@ -18,13 +23,20 @@ export async function POST(request: Request) {
     if (!salon || !(await verifyPassword(body.password, salon.passwordHash))) {
       return NextResponse.json({ error: "E-posta veya şifre hatalı." }, { status: 401 });
     }
-    const token = await createSessionToken({
-      salonId: salon.id,
-      slug: salon.slug,
+
+    const { challengeId, maskedEmail } = await createAndSendEmailChallenge({
       email: salon.email,
+      purpose: "login",
+      payload: { salonId: salon.id },
     });
-    await setSessionCookie(token);
-    return NextResponse.json({ ok: true, slug: salon.slug });
+
+    return NextResponse.json({
+      ok: true,
+      needsVerification: true,
+      challengeId,
+      maskedEmail,
+      purpose: "login" as const,
+    });
   } catch (error) {
     return toErrorResponse(error, {
       zodMessage: "E-posta ve şifre gerekli.",

@@ -123,3 +123,36 @@ test("rejectIfCrossOrigin returns null when allowed", () => {
     assert.equal(response, null);
   });
 });
+
+test("isSameOriginRequest uses Host when request.url host differs", () => {
+  withNodeEnv("production", () => {
+    const ok = isSameOriginRequest(
+      request("http://localhost:3000/api/auth/register", {
+        host: "127.0.0.1:3000",
+        origin: "http://127.0.0.1:3000",
+      }),
+    );
+    assert.equal(ok, true);
+
+    const bad = isSameOriginRequest(
+      request("http://localhost:3000/api/auth/register", {
+        host: "127.0.0.1:3000",
+        origin: "http://evil.example",
+      }),
+    );
+    assert.equal(bad, false);
+  });
+});
+
+test("isSameOriginRequest prefers X-Forwarded-Host on Vercel-style proxies", () => {
+  withNodeEnv("production", () => {
+    const ok = isSameOriginRequest(
+      request("http://127.0.0.1:3000/api/salon", {
+        "x-forwarded-host": "salon-ai-agent-sens6.vercel.app",
+        "x-forwarded-proto": "https",
+        origin: "https://salon-ai-agent-sens6.vercel.app",
+      }),
+    );
+    assert.equal(ok, true);
+  });
+});

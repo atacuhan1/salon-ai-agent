@@ -31,6 +31,22 @@ model Salon {
   appointments           Appointment[]
 }
 
+/// One-time email code for register/login. Stores only a hash of the code, never plaintext.
+model EmailAuthChallenge {
+  id           String    @id @default(cuid())
+  email        String
+  purpose      String
+  codeHash     String
+  payloadJson  String
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  attemptCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  @@index([email, purpose, createdAt])
+  @@index([expiresAt])
+}
+
 model Appointment {
   id            String   @id @default(cuid())
   salonId       String
