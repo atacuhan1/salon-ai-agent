@@ -14,9 +14,9 @@ export default function LoginPage() {
         <AuthForm mode="login" />
       </div>
       <p className="mt-4 text-sm text-[#5a4144]">
-        Yeni salon mu?{" "}
+        Hesabınız yok mu?{" "}
         <Link href="/kayit" className="text-[#8e4b56] underline">
-          14 gün ücretsiz deneyin
+          Demo hesabı oluşturun
         </Link>
       </p>
     </main>

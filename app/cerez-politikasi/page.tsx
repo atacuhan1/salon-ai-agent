@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LegalDoc, LegalSection, Placeholder } from "@/app/components/legal-doc";
+import { LegalDoc, LegalSection } from "@/app/components/legal-doc";
 
 export const metadata: Metadata = {
   title: "Çerez Politikası — Salon AI",
   description:
-    "Salon AI çerez aydınlatması: oturum çerezi ve zorunlu teknik çerezler.",
+    "Salon AI kişisel demo çerez aydınlatması: oturum çerezi ve zorunlu teknik çerezler.",
 };
 
 export default function CookiePolicyPage() {
@@ -13,14 +13,14 @@ export default function CookiePolicyPage() {
     <LegalDoc title="Çerez Politikası" updated="24 Eylül 2026">
       <p>
         Bu metin, Kişisel Verileri Koruma Kurumu’nun Çerez Uygulamaları Hakkında
-        Rehberi çerçevesinde site ziyaretçilerini bilgilendirir. Aydınlatma,
-        çerezlerin rıza gerektirip gerektirmediğinden bağımsız olarak sunulur.
+        Rehberi çerçevesinde ziyaretçileri bilgilendirir. Salon AI kişisel bir
+        demo / portföy projesidir; ücretli hizmet veya ticari analitik ürünü
+        değildir.
       </p>
 
       <LegalSection title="1. Veri sorumlusu">
         <p>
-          <Placeholder>[VERİ SORUMLUSU UNVANI]</Placeholder> — iletişim:{" "}
-          <Placeholder>[KVKK_ILETISIM@ORNEK.COM]</Placeholder>. Ayrıntılar için{" "}
+          Ata Cuhan (`atacuhan1`). Ayrıntılar için{" "}
           <Link href="/gizlilik" className="text-[#8e4b56] underline">
             KVKK Aydınlatma Metni
           </Link>
@@ -43,7 +43,7 @@ export default function CookiePolicyPage() {
               <tr>
                 <td className="px-4 py-3 font-mono text-xs">salon_session</td>
                 <td className="px-4 py-3">
-                  Salon paneli oturumu (giriş sonrası kimlik doğrulama). HttpOnly;
+                  Panel oturumu (giriş sonrası kimlik doğrulama). HttpOnly;
                   JavaScript okuyamaz.
                 </td>
                 <td className="px-4 py-3">7 gün</td>
@@ -61,10 +61,10 @@ export default function CookiePolicyPage() {
 
       <LegalSection title="3. Hukuki sebep">
         <p>
-          `salon_session`, talep ettiğiniz bilgi toplumu hizmetinin (güvenli panel
-          girişi) sunulması için kesinlikle gerekli kabul edilir. Bu nedenle çerez
-          banner’ı ile ayrı açık rıza istenmez; yine de aydınlatma sunulur (KVKK md.
-          5 ve Kurum çerez rehberi).
+          `salon_session`, talep ettiğiniz demo panel girişinin sunulması için
+          kesinlikle gerekli kabul edilir. Bu nedenle çerez banner’ı ile ayrı açık
+          rıza istenmez; yine de aydınlatma sunulur (KVKK md. 5 ve Kurum çerez
+          rehberi).
         </p>
       </LegalSection>
 

@@ -101,6 +101,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             className="mt-1 size-4 shrink-0 accent-[#8e4b56]"
           />
           <span>
+            Bu kişisel demo / portföy projesinin{" "}
             <Link href="/kullanim-sartlari" className="text-[#8e4b56] underline" target="_blank">
               Kullanım Şartları
             </Link>
@@ -108,7 +109,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             <Link href="/gizlilik" className="text-[#8e4b56] underline" target="_blank">
               KVKK Aydınlatma Metni
             </Link>
-            ’ni okudum. (Bu kutu pazarlama izni değildir.)
+            ’ni okudum. Ücretli hizmet veya pazarlama izni değildir.
           </span>
         </label>
       ) : null}
@@ -123,7 +124,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             ? "Kaydediliyor…"
             : "Giriş yapılıyor…"
           : isRegister
-            ? "14 gün ücretsiz dene"
+            ? "Demo hesabı oluştur"
             : "Panele gir"}
       </button>
     </form>

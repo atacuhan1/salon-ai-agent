@@ -1,45 +1,47 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LegalDoc, LegalSection, Placeholder } from "@/app/components/legal-doc";
+import { LegalDoc, LegalSection } from "@/app/components/legal-doc";
 
 export const metadata: Metadata = {
   title: "Kullanım Şartları — Salon AI",
-  description: "Salon AI hizmet kullanım şartları.",
+  description:
+    "Salon AI kişisel demo / portföy projesi kullanım şartları.",
 };
 
 export default function TermsPage() {
   return (
     <LegalDoc title="Kullanım Şartları" updated="24 Eylül 2026">
       <p>
-        Bu şartlar, Salon AI web sitesi, salon paneli ve müşteri sohbet / randevu
-        asistanı (“Hizmet”) için geçerlidir. Hizmeti kaydolarak veya kullanarak bu
-        şartları kabul etmiş sayılırsınız. Metin muhafazakâr ve bilgilendirici
-        amaçlıdır; avukat onaylı sözleşme değildir.
+        Bu şartlar, Salon AI web sitesi, panel ve sohbet / randevu demosu
+        (“Demo”) için geçerlidir. Demoyu kaydolarak veya kullanarak bu metni
+        okuduğunuzu kabul etmiş sayılırsınız. Metin bilgilendirme amaçlıdır;
+        avukat onaylı ticari sözleşme veya SLA değildir.
+      </p>
+      <p>
+        Salon AI ücretli bir ürün veya ticari hizmet olarak sunulmamaktadır.
+        Amaç: GitHub portföyünde görünen kişisel bir teknik prototiptir.
       </p>
 
-      <LegalSection title="1. Hizmet sağlayıcı">
+      <LegalSection title="1. Geliştirici">
         <p>
-          Ticari kimlik bilgileri tamamlanana kadar:{" "}
-          <Placeholder>[VERİ SORUMLUSU UNVANI]</Placeholder>, adres{" "}
-          <Placeholder>[AÇIK ADRES]</Placeholder>, iletişim{" "}
-          <Placeholder>[DESTEK@ORNEK.COM]</Placeholder>.
-        </p>
-        <p>
-          Yazılım mülkiyeti Ata Cuhan’a aittir (All Rights Reserved). Depoyu
-          görüntülemek kullanım lisansı vermez.
+          Demo, Ata Cuhan (`atacuhan1`) tarafından kişisel proje olarak
+          geliştirilir. Yazılım mülkiyeti Ata Cuhan’a aittir (All Rights
+          Reserved). Depoyu görüntülemek kullanım lisansı vermez. Şirket unvanı,
+          MERSİS veya vergi kimliği yoktur; ticari işletme olarak faaliyet
+          iddiası yoktur.
         </p>
       </LegalSection>
 
-      <LegalSection title="2. Hizmetin kapsamı ve geliştirme durumu">
+      <LegalSection title="2. Kapsam ve durum">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            Salon sahipleri hizmet, fiyat, personel ve saatlerini panelden yönetir;
-            müşteriler web sohbeti (ve yapılandırıldığında WhatsApp) üzerinden
-            randevu talebinde bulunabilir.
+            Panelde hizmet, fiyat, personel ve saat tanımlanabilir; web sohbeti
+            (ve yapılandırıldığında WhatsApp) üzerinden randevu denemesi
+            yapılabilir.
           </li>
           <li>
-            Ürün aktif geliştirme aşamasındadır. Özellikler değişebilir; kesintisiz
-            veya hatasız çalışma garanti edilmez.
+            Özellikler değişebilir, bozulabilir veya kaldırılabilir. Kesintisiz,
+            hatasız veya üretim kalitesinde çalışma garanti edilmez.
           </li>
           <li>
             WhatsApp uçtan uca çalışması Meta hesap / ortam değişkenlerine; takvim
@@ -47,9 +49,9 @@ export default function TermsPage() {
             kapalı kalır.
           </li>
           <li>
-            Ödeme altyapısı (iyzico / Stripe vb.) henüz üretimde yoktur; paneldeki
-            abonelik simülasyonu yalnızca geliştirme / açıkça etkinleştirilmiş ortam
-            içindir.
+            Gerçek ödeme altyapısı yoktur. Paneldeki “abonelik / deneme”
+            alanları teknik demo davranışıdır; ücret tahsil edilmez, fatura
+            kesilmez.
           </li>
         </ul>
       </LegalSection>
@@ -57,39 +59,39 @@ export default function TermsPage() {
       <LegalSection title="3. Hesaplar ve sorumluluklar">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            Salon hesabı bilgilerinin doğruluğu ve şifrenin gizliliği salon
-            sahibine aittir.
+            Hesap bilgilerinin doğruluğu ve şifrenin gizliliği size aittir.
           </li>
           <li>
             Panele girilen hizmet / fiyat / saat bilgileri asistanın kaynak
-            gerçeğidir; yanlış girişlerden doğan müşteri iletişimi salonun
-            sorumluluğundadır.
+            gerçeğidir; yanlış girişlerden doğan sonuçlardan geliştirici sorumlu
+            tutulamaz.
           </li>
           <li>
-            Müşteri kişisel verilerini (ad, telefon, sohbet) işlerken salon sahibi
-            kendi KVKK yükümlülüklerini yerine getirmelidir.
+            Gerçek müşteri kişisel verisi girmeyin. Demo için yalnızca test /
+            uydurma veriler kullanın.
           </li>
           <li>
-            Hizmeti yasadışı, spam, dolandırıcılık veya başkalarının haklarını ihlal
-            eden şekilde kullanmak yasaktır.
+            Demoyu yasadışı, spam, dolandırıcılık veya başkalarının haklarını
+            ihlal eden şekilde kullanmak yasaktır.
           </li>
         </ul>
       </LegalSection>
 
       <LegalSection title="4. Yapay zekâ asistanı">
         <p>
-          Asistan büyük dil modeli ve kural tabanlı araçlar kullanır. Yanıtlar hata
-          içerebilir. Müsaitlik ve randevu sonucu yalnızca sistem araç çıktısıyla
-          doğrulanmalıdır; modelin uydurduğu fiyat veya saat bağlayıcı değildir.
-          İnsan denetimi ve salon onayı önerilir.
+          Asistan büyük dil modeli ve kural tabanlı araçlar kullanır. Yanıtlar
+          hata içerebilir. Müsaitlik ve randevu sonucu yalnızca sistem araç
+          çıktısıyla doğrulanmalıdır; modelin uydurduğu fiyat veya saat
+          bağlayıcı değildir.
         </p>
       </LegalSection>
 
-      <LegalSection title="5. Abonelik ve erişim">
+      <LegalSection title="5. Erişim (ticari abonelik yok)">
         <p>
-          Yeni salonlar için 14 günlük deneme sunulabilir. Deneme veya abonelik
-          bitince müşteri asistanı kilitlenir. Ücretli abonelik koşulları ödeme
-          entegrasyonu eklendiğinde ayrıca açıklanacaktır.
+          Yeni hesaplarda teknik olarak 14 günlük “deneme” alanı görünebilir;
+          bu bir satış teklifi veya ücretli abonelik vaadi değildir. Erişim
+          kilitlenebilir veya proje kapatılabilir. Ücretli hizmet, destek
+          taahhüdü veya uptime / SLA yoktur.
         </p>
       </LegalSection>
 
@@ -102,9 +104,10 @@ export default function TermsPage() {
 
       <LegalSection title="7. Sorumluluğun sınırlanması">
         <p>
-          Hizmet “olduğu gibi” sunulur. Dolaylı zarar, kâr kaybı, veri kaybı veya
+          Demo “olduğu gibi” sunulur. Dolaylı zarar, kâr kaybı, veri kaybı veya
           iş kesintisinden doğan talepler mümkün olan en geniş ölçüde
-          reddedilir; zorunlu tüketici / emredici hukuk hükümleri saklıdır.
+          reddedilir; emredici hukuk hükümleri saklıdır. Ticari tüketici hizmeti
+          olarak pazarlanmamaktadır.
         </p>
       </LegalSection>
 
@@ -124,16 +127,25 @@ export default function TermsPage() {
 
       <LegalSection title="9. Değişiklikler ve iletişim">
         <p>
-          Şartlar güncellenebilir; önemli değişiklikler sitede yayımlanır. Sorular
-          için: <Placeholder>[DESTEK@ORNEK.COM]</Placeholder>.
+          Bu metin güncellenebilir; güncel sürüm sitede yayımlanır. Sorular için
+          GitHub:{" "}
+          <a
+            href="https://github.com/atacuhan1/salon-ai-agent"
+            className="text-[#8e4b56] underline"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            atacuhan1/salon-ai-agent
+          </a>
+          .
         </p>
       </LegalSection>
 
       <LegalSection title="10. Uygulanacak hukuk">
         <p>
-          Anlaşmazlıklarda Türkiye Cumhuriyeti hukuku uygulanır; yetkili mahkemeler
-          (zorunlu tüketici kuralları saklı kalmak kaydıyla){" "}
-          <Placeholder>[YETKİLİ MAHKEME / İSTANBUL]</Placeholder> mahkemeleridir.
+          Anlaşmazlıklarda Türkiye Cumhuriyeti hukuku uygulanır. Yetkili merci
+          konusunda emredici kurallar saklıdır; bu kişisel proje için ayrı bir
+          “yetkili mahkeme” ticari taahhüdü verilmez.
         </p>
       </LegalSection>
     </LegalDoc>

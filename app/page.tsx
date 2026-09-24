@@ -10,8 +10,8 @@ const features = [
     body: "Kim hangi gün çalışıyor, salon kaça kadar açık? Saatleri ve personeli panelden güncelleyin.",
   },
   {
-    title: "Abonelik ile açık kalır",
-    body: "14 gün ücretsiz deneyin. Deneme veya abonelik bitince müşteri asistanı kapanır; siz panelden yenilersiniz.",
+    title: "Demo erişimi",
+    body: "Bu kişisel bir portföy demosudur; ücretli abonelik satılmaz. Erişim teknik olarak kilitlenebilir — ticari SLA yoktur.",
   },
 ];
 
@@ -28,7 +28,7 @@ export default function HomePage() {
             href="/kayit"
             className="rounded-full bg-[#8e4b56] px-4 py-2 text-white"
           >
-            14 gün dene
+            Demo kayıt
           </Link>
         </nav>
       </header>
@@ -47,7 +47,7 @@ export default function HomePage() {
             href="/kayit"
             className="rounded-full bg-[#8e4b56] px-6 py-3 text-sm tracking-wide text-white uppercase"
           >
-            Salonumu kaydet
+            Demo hesabı oluştur
           </Link>
           <Link
             href="/demo"
