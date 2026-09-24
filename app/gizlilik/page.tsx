@@ -69,7 +69,9 @@ export default function PrivacyPage() {
         <ul className="list-disc space-y-2 pl-5">
           <li>
             Hesap: salon adı, e-posta, şifre özeti (hash), isteğe bağlı telefon ve
-            adres, deneme / erişim durumu alanları (ödeme alınmaz).
+            adres, deneme / erişim durumu alanları (ödeme alınmaz). Kayıt ve girişte
+            e-posta doğrulama kodu gönderilir; kodun özeti (hash) kısa süre saklanır,
+            düz metin kod loglanmaz.
           </li>
           <li>
             Panel içerikleri: hizmetler, fiyatlar, çalışan adları, çalışma saatleri,

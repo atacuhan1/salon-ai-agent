@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createSessionToken, hashPassword, setSessionCookie } from "@/lib/auth";
+import { hashPassword } from "@/lib/auth";
 import { toErrorResponse } from "@/lib/api-guard";
 import { prisma } from "@/lib/db";
+import { createAndSendEmailChallenge } from "@/lib/email-auth-challenge";
+import { rejectIfCrossOrigin } from "@/lib/request-origin";
 import { slugify } from "@/lib/slug";
-import { seedSalonDefaults, uniqueSlug } from "@/lib/salon-store";
-import { SUBSCRIPTION_STATUS, trialEndsFrom } from "@/lib/subscription";
 
 const bodySchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -18,6 +18,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const blocked = rejectIfCrossOrigin(request);
+  if (blocked) return blocked;
+
   try {
     const body = bodySchema.parse(await request.json());
     const email = body.email.toLowerCase();
@@ -26,27 +29,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Bu e-posta zaten kayıtlı." }, { status: 409 });
     }
 
-    const slug = await uniqueSlug(slugify(body.slug || body.name));
-    const salon = await prisma.salon.create({
-      data: {
+    const { challengeId, maskedEmail } = await createAndSendEmailChallenge({
+      email,
+      purpose: "register",
+      payload: {
         name: body.name,
-        email,
         passwordHash: await hashPassword(body.password),
         phone: body.phone,
         address: body.address,
-        slug,
-        subscriptionStatus: SUBSCRIPTION_STATUS.trial,
-        trialEndsAt: trialEndsFrom(),
+        slugBase: slugify(body.slug || body.name),
       },
     });
-    await seedSalonDefaults(salon.id);
-    const token = await createSessionToken({
-      salonId: salon.id,
-      slug: salon.slug,
-      email: salon.email,
+
+    return NextResponse.json({
+      ok: true,
+      needsVerification: true,
+      challengeId,
+      maskedEmail,
+      purpose: "register" as const,
     });
-    await setSessionCookie(token);
-    return NextResponse.json({ ok: true, slug: salon.slug });
   } catch (error) {
     return toErrorResponse(error, {
       zodMessage:
