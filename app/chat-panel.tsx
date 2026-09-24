@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 interface UiMessage {
   role: "user" | "assistant";
   content: string;
-  tools?: string[];
 }
 
 const DEFAULT_SUGGESTIONS = [
@@ -13,6 +12,13 @@ const DEFAULT_SUGGESTIONS = [
   "Yarın için müsait misiniz?",
   "Bu hafta hangi günler açıksınız?",
 ];
+
+function newSessionId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID().replace(/-/g, "").slice(0, 24);
+  }
+  return `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+}
 
 export function ChatPanel({
   salonName = "Bloom Tırnak Atölyesi",
@@ -27,14 +33,14 @@ export function ChatPanel({
   lockMessage?: string;
   suggestions?: string[];
 }) {
-  const [sessionId, setSessionId] = useState("905551234567");
+  const [sessionId] = useState(newSessionId);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [messages, setMessages] = useState<UiMessage[]>([
     {
       role: "assistant",
       content: locked
-        ? lockMessage || "Bu salonun aboneliği aktif değil."
+        ? lockMessage || "Bu salon şu an randevu asistanını kullanmıyor."
         : `Merhaba, ${salonName} randevu asistanıyım. Hizmet, fiyat veya müsait saat sorabilirsiniz.`,
     },
   ]);
@@ -62,7 +68,6 @@ export function ChatPanel({
       });
       const data = (await response.json()) as {
         reply?: string;
-        toolCalls?: string[];
         error?: string;
       };
       if (!response.ok) {
@@ -73,7 +78,6 @@ export function ChatPanel({
         {
           role: "assistant",
           content: data.reply ?? "",
-          tools: data.toolCalls,
         },
       ]);
     } catch (error) {
@@ -83,8 +87,8 @@ export function ChatPanel({
           role: "assistant",
           content:
             error instanceof Error
-              ? `Bir hata oluştu: ${error.message}`
-              : "Bir hata oluştu.",
+              ? error.message
+              : "Bir sorun oluştu. Lütfen biraz sonra tekrar deneyin.",
         },
       ]);
     } finally {
@@ -95,24 +99,12 @@ export function ChatPanel({
   return (
     <section className="flex min-h-[640px] flex-1 flex-col overflow-hidden rounded-3xl border border-[#eadfd6] bg-[#fffaf6] shadow-[0_24px_80px_rgba(90,50,40,0.12)]">
       <header className="border-b border-[#eadfd6] px-5 py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm tracking-[0.2em] uppercase text-[#8e4b56]">
-              {salonSlug ? salonName : "Test sohbeti"}
-            </p>
-            <p className="text-xl font-medium">
-              {locked ? "Asistan kapalı" : "WhatsApp olmadan dene"}
-            </p>
-          </div>
-          <label className="text-xs text-[#8e4b56]">
-            session_id
-            <input
-              value={sessionId}
-              onChange={(event) => setSessionId(event.target.value)}
-              className="mt-1 block w-40 rounded-full border border-[#eadfd6] bg-white px-3 py-1 font-mono text-[11px] text-[#3b2a2c]"
-            />
-          </label>
-        </div>
+        <p className="text-sm tracking-[0.2em] uppercase text-[#8e4b56]">
+          {salonSlug ? salonName : "Örnek sohbet"}
+        </p>
+        <p className="text-xl font-medium">
+          {locked ? "Asistan şu an kapalı" : "Randevu için yazın"}
+        </p>
       </header>
 
       <div className="flex-1 space-y-3 overflow-y-auto px-5 py-5">
@@ -126,11 +118,6 @@ export function ChatPanel({
             }`}
           >
             {message.content}
-            {message.tools && message.tools.length > 0 ? (
-              <p className="mt-2 text-[11px] tracking-wide uppercase opacity-70">
-                araç: {message.tools.join(", ")}
-              </p>
-            ) : null}
           </article>
         ))}
         {pending ? (
@@ -160,7 +147,11 @@ export function ChatPanel({
           void send(input);
         }}
       >
+        <label className="sr-only" htmlFor="chat-message">
+          Mesajınız
+        </label>
         <input
+          id="chat-message"
           value={input}
           onChange={(event) => setInput(event.target.value)}
           disabled={locked}

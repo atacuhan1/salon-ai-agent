@@ -20,7 +20,7 @@ export async function requireOwner(options?: { allowExpired?: boolean }) {
   }
   const access = getAccessState(salon);
   if (!options?.allowExpired && !access.active) {
-    throw new HttpError(402, "Abonelik aktif değil. Lütfen ödemeyi tamamlayın.");
+    throw new HttpError(402, "Aboneliğiniz aktif değil. Abonelik sayfasından süreyi yenileyin.");
   }
   return { salon, access };
 }

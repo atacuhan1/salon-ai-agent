@@ -13,10 +13,11 @@ export default async function BillingPage() {
     <div className="space-y-4">
       <h2 className="text-3xl font-semibold">Abonelik</h2>
       <p className="text-[#5a4144]">
-        Durum: <strong>{access.label}</strong>
+        Durumunuz: <strong>{access.label}</strong>
         {access.endsAt
           ? ` · bitiş ${access.endsAt.toLocaleDateString("tr-TR")}`
           : ""}
+        . Abonelik aktif değilken müşteriler randevu asistanını kullanamaz.
       </p>
       <BillingActions locked={!access.active} />
     </div>

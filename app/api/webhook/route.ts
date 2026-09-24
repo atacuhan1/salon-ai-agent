@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     try {
       await sendWhatsAppText(
         incoming.from,
-        "Bu WhatsApp hattı henüz bir salona bağlanmamış. Salon paneli → Özet bölümünden Meta phone_number_id değerini kaydedin.",
+        "Bu WhatsApp hattı henüz bir salona bağlanmamış. Lütfen salonu telefonla arayın.",
         { phoneNumberId: incoming.phoneNumberId },
       );
     } catch {
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     try {
       await sendWhatsAppText(
         incoming.from,
-        "Bu salonun aboneliği aktif değil. Randevu asistanı kapalı.",
+        "Bu salon şu an randevu asistanını kullanmıyor. Lütfen salonu telefonla arayın.",
         { phoneNumberId: incoming.phoneNumberId },
       );
     } catch {

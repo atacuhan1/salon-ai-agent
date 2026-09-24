@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Salon AI — Randevu asistanı",
   description:
-    "Salon sahipleri hizmet, fiyat, personel ve saatlerini panelden girer. Abonelik bitince asistan kapanır.",
+    "Salonunuz için hizmet, fiyat ve saatleri panelden yönetin; müşterileriniz sohbetle randevu alsın.",
 };
 
 export default function RootLayout({

@@ -12,7 +12,8 @@ export default async function ServicesPage() {
     <div className="space-y-4">
       <h2 className="text-3xl font-semibold">Hizmetler ve ücretler</h2>
       <p className="text-[#5a4144]">
-        Asistan yalnızca burada yazdığınız isim, süre ve fiyatı söyler.
+        Müşteri sorduğunda asistan yalnızca burada yazdığınız hizmet adı, süre
+        ve fiyatı söyler.
       </p>
       <ServiceManager services={salon.services} locked={!getAccessState(salon).active} />
     </div>
