@@ -14,6 +14,7 @@ const bodySchema = z.object({
   phone: z.string().trim().max(30).optional().default(""),
   address: z.string().trim().max(160).optional().default(""),
   slug: z.string().trim().max(40).optional(),
+  acceptedTerms: z.literal(true),
 });
 
 export async function POST(request: Request) {
@@ -48,7 +49,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, slug: salon.slug });
   } catch (error) {
     return toErrorResponse(error, {
-      zodMessage: "Ad, geçerli e-posta ve en az 8 karakter şifre gerekli.",
+      zodMessage:
+        "Ad, geçerli e-posta, en az 8 karakter şifre ve kullanım şartları onayı gerekli.",
       fallbackMessage: "Kayıt başarısız.",
       logKey: "POST /api/auth/register failed",
     });
