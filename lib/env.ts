@@ -58,6 +58,10 @@ const envSchema = z.object({
   ),
   AUTH_SECRET: optionalString,
   DATABASE_URL: optionalString,
+  /** Resend API key for verification emails (required for register/login OTP). */
+  RESEND_API_KEY: optionalString,
+  /** Verified sender, e.g. `Salon Demo <onboarding@resend.dev>` or your domain. */
+  EMAIL_FROM: optionalString,
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
@@ -104,6 +108,8 @@ export function getEnv(): AppEnv {
     OPENAI_HISTORY_LIMIT: env.OPENAI_HISTORY_LIMIT,
     AUTH_SECRET: env.AUTH_SECRET,
     DATABASE_URL: databaseUrl,
+    RESEND_API_KEY: env.RESEND_API_KEY,
+    EMAIL_FROM: env.EMAIL_FROM,
   });
 
   return cached;
@@ -133,4 +139,9 @@ export function hasSupabaseConfig(): boolean {
 export function hasWhatsAppSendConfig(): boolean {
   const env = getEnv();
   return Boolean(env.WHATSAPP_ACCESS_TOKEN && env.WHATSAPP_PHONE_NUMBER_ID);
+}
+
+export function hasEmailSendConfig(): boolean {
+  const env = getEnv();
+  return Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
 }

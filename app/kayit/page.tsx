@@ -8,8 +8,8 @@ export default function RegisterPage() {
       <h1 className="mt-3 text-4xl font-semibold">Demo hesabı oluşturun</h1>
       <p className="mt-3 text-[#5a4144]">
         Bu kişisel bir portföy demosudur; ücretli hizmet satılmaz. E-posta ve
-        şifrenizle kayıt olun; panelde hizmet, fiyat, çalışan ve saat
-        deneyebilirsiniz. Gerçek müşteri verisi girmeyin.
+        şifrenizle kayıt olun; e-postanıza gelen kısa kodu girince panel açılır.
+        Gerçek müşteri verisi girmeyin.
       </p>
       <div className="mt-8 rounded-3xl border border-[#eadfd6] bg-[#fffaf6] p-6">
         <AuthForm mode="register" />

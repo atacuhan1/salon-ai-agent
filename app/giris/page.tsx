@@ -8,7 +8,8 @@ export default function LoginPage() {
       <h1 className="mt-3 text-4xl font-semibold">Panele giriş</h1>
       <p className="mt-3 text-[#5a4144]">
         Hizmetlerinizi, saatlerinizi ve bugünkü randevularınızı yönetmek için
-        e-posta ve şifrenizle giriş yapın.
+        e-posta ve şifrenizle giriş yapın; e-postanıza gelen kısa kodu girince
+        panele geçersiniz.
       </p>
       <div className="mt-8 rounded-3xl border border-[#eadfd6] bg-[#fffaf6] p-6">
         <AuthForm mode="login" />
