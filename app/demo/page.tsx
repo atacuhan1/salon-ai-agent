@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ChatPanel } from "@/app/chat-panel";
 import { SALON_ADDRESS, SALON_NAME, SALON_PHONE, services } from "@/prompts/salon-rules";
 
@@ -12,8 +13,14 @@ export default function DemoPage() {
           {SALON_NAME}
         </h1>
         <p className="mt-4 max-w-md text-lg leading-relaxed text-[#5a4144]">
-          Bu sayfa hazır bir demodr. Kendi salonunuz için kayıt olup hizmet ve
-          saatleri panelden girin.
+          Bu sayfa örnek bir salondur. Sağdaki sohbetle fiyat veya müsaitlik
+          sorabilirsiniz. Kendi salonunuz için kayıt olup panelden ayarlarınızı
+          girin.
+        </p>
+        <p className="mt-4 text-sm text-[#5a4144]">
+          <Link href="/kayit" className="text-[#8e4b56] underline">
+            Salonumu kaydet
+          </Link>
         </p>
         <dl className="mt-8 space-y-2 text-[#5a4144]">
           <div>

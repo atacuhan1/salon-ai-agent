@@ -19,9 +19,9 @@ export default async function PanelHomePage() {
     <div className="space-y-6">
       <h2 className="text-3xl font-semibold">Özet</h2>
       <p className="text-[#5a4144]">
-        Müşterileriniz bu adresten yazar:{" "}
+        Müşterilerinizin randevu sayfası:{" "}
         <Link href={`/s/${salon.slug}`} className="text-[#8e4b56] underline">
-          /s/{salon.slug}
+          {salon.name} sohbeti
         </Link>
       </p>
       <ul className="grid gap-3 md:grid-cols-3">
@@ -38,11 +38,11 @@ export default async function PanelHomePage() {
 
       <section className="space-y-3">
         <h3 className="text-xl font-semibold">Bugünün randevuları</h3>
-        <p className="text-sm text-[#5a4144]">{today} · Europe/Istanbul</p>
+        <p className="text-sm text-[#5a4144]">{today}</p>
         {appointments.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-[#eadfd6] bg-[#fffaf6] p-4 text-sm text-[#5a4144]">
-            Bugün henüz randevu yok. WhatsApp veya müşteri sohbetinden alınan randevular burada
-            listelenir.
+            Bugün henüz randevu yok. Müşteriler sohbet sayfanızdan randevu alınca
+            burada görünür.
           </p>
         ) : (
           <ul className="divide-y divide-[#eadfd6] overflow-hidden rounded-2xl border border-[#eadfd6] bg-[#fffaf6]">

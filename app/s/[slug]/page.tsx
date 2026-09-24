@@ -28,11 +28,16 @@ export default async function TenantChatPage({
           {catalog.name}
         </h1>
         <p className="mt-4 max-w-md text-lg leading-relaxed text-[#5a4144]">
-          {catalog.address || "Adres panelden girilir."}
+          {catalog.address || "Adres henüz eklenmedi. Salona telefonla ulaşabilirsiniz."}
         </p>
         {locked ? (
           <p className="mt-6 rounded-2xl bg-[#f6ebe4] p-4 text-[#8e4b56]">
-            Bu salonun aboneliği aktif değil. Randevu asistanı kapalı.
+            Bu salon şu an randevu asistanını kullanmıyor. Lütfen salonu arayın
+            veya daha sonra tekrar deneyin.
+          </p>
+        ) : catalog.services.length === 0 ? (
+          <p className="mt-8 text-sm text-[#5a4144]">
+            Hizmet listesi henüz hazır değil. Sohbetten sormayı deneyebilirsiniz.
           </p>
         ) : (
           <ul className="mt-8 space-y-2 text-sm text-[#5a4144]">
@@ -54,7 +59,7 @@ export default async function TenantChatPage({
         salonName={catalog.name}
         salonSlug={catalog.slug}
         locked={locked}
-        lockMessage="Bu salonun aboneliği aktif değil. Lütfen salon sahibiyle iletişime geçin."
+        lockMessage="Bu salon şu an randevu asistanını kullanmıyor. Lütfen salonu arayın."
         suggestions={
           catalog.services[0]
             ? [

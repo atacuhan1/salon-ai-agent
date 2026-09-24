@@ -91,7 +91,13 @@ export function AuthForm({ mode }: AuthFormProps) {
         disabled={pending}
         className="w-full rounded-full bg-[#8e4b56] px-5 py-3 text-sm tracking-wide text-white uppercase disabled:opacity-50"
       >
-        {pending ? "Kaydediliyor…" : isRegister ? "14 gün ücretsiz dene" : "Giriş yap"}
+        {pending
+          ? isRegister
+            ? "Kaydediliyor…"
+            : "Giriş yapılıyor…"
+          : isRegister
+            ? "14 gün ücretsiz dene"
+            : "Panele gir"}
       </button>
     </form>
   );
