@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 interface AuthFormProps {
@@ -16,7 +17,12 @@ export function AuthForm({ mode }: AuthFormProps) {
     setError("");
     setPending(true);
     const form = new FormData(event.currentTarget);
-    const payload = Object.fromEntries(form.entries());
+    const payload: Record<string, unknown> = Object.fromEntries(form.entries());
+    if (isRegister) {
+      payload.acceptedTerms = form.get("acceptedTerms") === "true";
+    } else {
+      delete payload.acceptedTerms;
+    }
     try {
       const response = await fetch(isRegister ? "/api/auth/register" : "/api/auth/login", {
         method: "POST",
@@ -85,6 +91,27 @@ export function AuthForm({ mode }: AuthFormProps) {
           className="mt-1 w-full rounded-2xl border border-[#eadfd6] bg-white px-4 py-3"
         />
       </label>
+      {isRegister ? (
+        <label className="flex items-start gap-3 text-sm leading-relaxed text-[#5a4144]">
+          <input
+            name="acceptedTerms"
+            type="checkbox"
+            value="true"
+            required
+            className="mt-1 size-4 shrink-0 accent-[#8e4b56]"
+          />
+          <span>
+            <Link href="/kullanim-sartlari" className="text-[#8e4b56] underline" target="_blank">
+              Kullanım Şartları
+            </Link>
+            ’nı kabul ediyorum;{" "}
+            <Link href="/gizlilik" className="text-[#8e4b56] underline" target="_blank">
+              KVKK Aydınlatma Metni
+            </Link>
+            ’ni okudum. (Bu kutu pazarlama izni değildir.)
+          </span>
+        </label>
+      ) : null}
       {error ? <p className="text-sm text-[#8e4b56]">{error}</p> : null}
       <button
         type="submit"
