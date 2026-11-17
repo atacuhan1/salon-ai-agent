@@ -37,6 +37,7 @@ Next.js 15 (App Router) · TypeScript · React 19 · OpenAI · Postgres + Prisma
 
 ```bash
 cp .env.example .env.local
+cp .env.example .env   # Prisma CLI reads DATABASE_URL from .env, not .env.local
 npm ci
 npm run db:up
 npx prisma migrate deploy
@@ -46,6 +47,12 @@ npm run dev
 App: http://localhost:3000 · Register: `/kayit` · Panel: `/panel` · Demo chat: `/demo`
 
 For register/login OTP locally, set `RESEND_API_KEY` and `EMAIL_FROM` in `.env.local`. Without them the API fails closed with a Turkish error (no fake success).
+
+`npm test` does not load any env file. The database tests need `DATABASE_URL` set in the shell (use the local value from `.env.example`), otherwise they fail with `DATABASE_URL gerekli`:
+
+```bash
+export DATABASE_URL="$(grep '^DATABASE_URL=' .env | cut -d= -f2-)"   # PowerShell: $env:DATABASE_URL = "<value from .env>"
+```
 
 ```bash
 npm test && npm run lint && npm run build
