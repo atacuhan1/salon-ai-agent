@@ -1,6 +1,11 @@
 import { checkAvailability, createAppointment } from "@/lib/calendar";
 import { logger } from "@/lib/logger";
-import { defaultCatalog, type SalonCatalog } from "@/lib/salon-catalog";
+import {
+  defaultCatalog,
+  findStaffInText,
+  staffWorkingHours,
+  type SalonCatalog,
+} from "@/lib/salon-catalog";
 import {
   addDaysToSalonDate,
   formatHumanSalonDate,
@@ -8,7 +13,7 @@ import {
   todayInSalon,
   weekdayInSalon,
 } from "@/lib/timezone";
-import type { AgentResult, ChatMessage, Service } from "@/lib/types";
+import type { AgentResult, ChatMessage, Service, StaffMember } from "@/lib/types";
 import { findService, weekdayLabels } from "@/prompts/salon-rules";
 
 const weekdayEntries = [
@@ -168,6 +173,34 @@ function lastUserDate(history: ChatMessage[], userMessage: string, today: string
   return null;
 }
 
+/** Staff named in the current message, otherwise the latest one named by the user. */
+function lastUserStaff(
+  history: ChatMessage[],
+  userMessage: string,
+  catalog: SalonCatalog,
+): StaffMember | null {
+  const fromCurrent = findStaffInText(userMessage, catalog.staff);
+  if (fromCurrent) {
+    return fromCurrent;
+  }
+  for (const message of [...history].reverse()) {
+    if (message.role !== "user") {
+      continue;
+    }
+    const found = findStaffInText(message.content, catalog.staff);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
+}
+
+function staffDaysLabel(member: StaffMember, catalog: SalonCatalog): string {
+  const hours = staffWorkingHours(catalog.workingHours, member);
+  const days = [1, 2, 3, 4, 5, 6, 0].filter((weekday) => hours[weekday]);
+  return days.map((weekday) => weekdayLabels[weekday]).join(", ");
+}
+
 function inferTime(text: string): string | null {
   const match = text.match(/\b(\d{1,2})[:.](\d{2})\b/);
   if (match) {
@@ -235,6 +268,7 @@ async function availabilityReply(
   service: Service,
   toolCalls: string[],
   catalog: SalonCatalog,
+  staff: StaffMember | null = null,
 ): Promise<AgentResult> {
   const human = formatHumanSalonDate(date);
   const weekday = weekdayInSalon(date);
@@ -246,22 +280,39 @@ async function availabilityReply(
     };
   }
 
+  const hours = staff ? staffWorkingHours(catalog.workingHours, staff) : catalog.workingHours;
+  if (staff && !hours[weekday]) {
+    const days = staffDaysLabel(staff, catalog);
+    return {
+      reply: `${staff.name} ${human} günü çalışmıyor.${
+        days ? ` Çalıştığı günler: ${days}.` : ""
+      } Başka bir gün ya da başka bir personel için bakabilirim.`,
+      toolCalls,
+      usedFallback: true,
+    };
+  }
+
   toolCalls.push("checkAvailability");
-  logger.info("Fallback calling checkAvailability", { date, durationMinutes: service.durationMinutes });
+  logger.info("Fallback calling checkAvailability", {
+    date,
+    durationMinutes: service.durationMinutes,
+    staffSelected: Boolean(staff),
+  });
   const slots = await checkAvailability(date, service.durationMinutes, {
     salonKey: catalog.id,
-    hours: catalog.workingHours,
+    hours,
     googleCalendarId: catalog.googleCalendarId,
   });
+  const withStaff = staff ? ` (${staff.name})` : "";
   if (slots.length === 0) {
     return {
-      reply: `${human} tarihinde ${service.name} için uygun saat kalmadı. Başka bir gün dener misiniz?`,
+      reply: `${human} tarihinde ${service.name}${withStaff} için uygun saat kalmadı. Başka bir gün dener misiniz?`,
       toolCalls,
       usedFallback: true,
     };
   }
   return {
-    reply: `${human} için ${service.name} (${service.durationMinutes} dk, ${service.priceTry} TL) müsait saatler: ${slots.join(", ")}.\nİstediğiniz saati, adınızı ve telefonunuzu yazmanız yeterli.`,
+    reply: `${human} için ${service.name}${withStaff} (${service.durationMinutes} dk, ${service.priceTry} TL) müsait saatler: ${slots.join(", ")}.\nİstediğiniz saati, adınızı ve telefonunuzu yazmanız yeterli.`,
     toolCalls,
     usedFallback: true,
   };
@@ -304,6 +355,7 @@ export async function runFallbackAgent(
   const time = inferTime(userMessage);
   const name = inferName(userMessage);
   const phone = inferPhone(userMessage) ?? (/^\d{10,15}$/.test(sessionId) ? sessionId : null);
+  const staff = lastUserStaff(history, userMessage, catalog);
 
   if (dateFromThisMessage && isPastSalonDate(dateFromThisMessage, today)) {
     return {
@@ -331,19 +383,23 @@ export async function runFallbackAgent(
       service.durationMinutes,
       {
         salonKey: catalog.id,
-        hours: catalog.workingHours,
+        hours: staff ? staffWorkingHours(catalog.workingHours, staff) : catalog.workingHours,
         googleCalendarId: catalog.googleCalendarId,
+        staffMemberId: staff?.id,
+        staffName: staff?.name,
       },
     );
     if (!result.success) {
-      return {
-        reply: `${result.startDateTime} saati dolu. Başka bir saat ister misiniz?`,
-        toolCalls,
-        usedFallback: true,
-      };
+      const reply =
+        result.reason === "outside_hours"
+          ? staff
+            ? `${staff.name} ${result.startDateTime} saatinde çalışmıyor. Müsait saatlere bakmamı ister misiniz?`
+            : `${result.startDateTime} çalışma saatlerimizin dışında. Müsait saatlere bakmamı ister misiniz?`
+          : `${result.startDateTime} saati dolu. Başka bir saat ister misiniz?`;
+      return { reply, toolCalls, usedFallback: true };
     }
     return {
-      reply: `Randevunuz alındı. ${service.name}, ${result.startDateTime} – ${result.endDateTime}. ${catalog.name}'nde sizi bekliyoruz.`,
+      reply: `Randevunuz alındı. ${service.name}${staff ? ` (${staff.name})` : ""}, ${result.startDateTime} – ${result.endDateTime}. ${catalog.name}'nde sizi bekliyoruz.`,
       toolCalls,
       usedFallback: true,
     };
@@ -354,7 +410,7 @@ export async function runFallbackAgent(
     date &&
     (looksLikeAvailability(userMessage) || looksLikeDateFollowup(userMessage, dateFromThisMessage))
   ) {
-    return availabilityReply(dateFromThisMessage ?? date, service, toolCalls, catalog);
+    return availabilityReply(dateFromThisMessage ?? date, service, toolCalls, catalog, staff);
   }
 
   if (dateFromThisMessage && !service) {

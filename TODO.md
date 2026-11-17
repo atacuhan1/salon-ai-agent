@@ -24,7 +24,7 @@ Sıra: önce yayın, sonra gerçek randevu kanalı, sonra para.
 
 ## Salon sahibinin istediği
 
-- [ ] “Şu ustadan randevu” — personel o gün yoksa slot sunma
+- [x] “Şu ustadan randevu” — personel o gün yoksa slot sunma (aynı anda tek randevu kapasitesi korunuyor; paralel personel kapasitesi ayrı iş)
 - [ ] İptal / erteleme (slot açılsın)
 - [ ] Hatırlatma: 1 gün önce ve ~2 saat önce WhatsApp
 - [ ] İptal kuralı metni (ör. 2 saat kala iptal yok)

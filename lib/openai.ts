@@ -4,10 +4,21 @@ import { checkAvailability, createAppointment } from "@/lib/calendar";
 import { getEnv, hasOpenAIConfig } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { inferDate } from "@/lib/fallback-agent";
-import { defaultCatalog, type SalonCatalog } from "@/lib/salon-catalog";
-import { formatHumanSalonDate, isPastSalonDate, todayInSalon } from "@/lib/timezone";
+import {
+  defaultCatalog,
+  findStaffByName,
+  findStaffInText,
+  staffWorkingHours,
+  type SalonCatalog,
+} from "@/lib/salon-catalog";
+import {
+  formatHumanSalonDate,
+  isPastSalonDate,
+  todayInSalon,
+  weekdayInSalon,
+} from "@/lib/timezone";
 import { buildSystemPrompt, findService } from "@/prompts/salon-rules";
-import type { AgentResult, ChatMessage } from "@/lib/types";
+import type { AgentResult, ChatMessage, StaffMember } from "@/lib/types";
 
 const TOOL_ROUND_MAX_TOKENS = 500;
 
@@ -36,12 +47,17 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "checkAvailability",
-      description: "Boş saatleri döner. date=YYYY-MM-DD.",
+      description:
+        "Boş saatleri döner. date=YYYY-MM-DD. Müşteri belirli bir personel isterse staffName ver.",
       parameters: {
         type: "object",
         properties: {
           date: { type: "string" },
           durationMinutes: { type: "number" },
+          staffName: {
+            type: "string",
+            description: "İsteğe bağlı. SALON_DATA_JSON.activeStaff içindeki ad.",
+          },
         },
         required: ["date", "durationMinutes"],
         additionalProperties: false,
@@ -52,7 +68,8 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "createAppointment",
-      description: "Randevu yazar. startDateTime=YYYY-MM-DDTHH:mm (Istanbul).",
+      description:
+        "Randevu yazar. startDateTime=YYYY-MM-DDTHH:mm (Istanbul). Personel seçildiyse aynı staffName'i ver.",
       parameters: {
         type: "object",
         properties: {
@@ -61,6 +78,10 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           serviceName: { type: "string" },
           startDateTime: { type: "string" },
           durationMinutes: { type: "number" },
+          staffName: {
+            type: "string",
+            description: "İsteğe bağlı. SALON_DATA_JSON.activeStaff içindeki ad.",
+          },
         },
         required: [
           "customerName",
@@ -91,16 +112,46 @@ function getOpenAI(): OpenAI {
   return openaiClient;
 }
 
+type StaffResolution =
+  | { ok: true; member: StaffMember | null }
+  | { ok: false; error: string; activeStaff: string[] };
+
+/** Resolves a tool's staffName against this salon's active staff only. */
+function resolveStaffArg(raw: unknown, catalog: SalonCatalog): StaffResolution {
+  if (typeof raw !== "string" || raw.trim() === "") {
+    return { ok: true, member: null };
+  }
+  const member = findStaffByName(raw, catalog.staff);
+  if (!member) {
+    return {
+      ok: false,
+      error: "Bu isimde aktif personel yok.",
+      activeStaff: catalog.staff.filter((item) => item.active).map((item) => item.name),
+    };
+  }
+  return { ok: true, member };
+}
+
 export async function executeTool(
   name: string,
   rawArgs: string,
   catalog: SalonCatalog = defaultCatalog,
 ): Promise<unknown> {
   const args = rawArgs ? JSON.parse(rawArgs) : {};
+  const staff = resolveStaffArg(args.staffName, catalog);
+  if (!staff.ok) {
+    return { error: staff.error, activeStaff: staff.activeStaff };
+  }
+  const member = staff.member;
+  const hours = member
+    ? staffWorkingHours(catalog.workingHours, member)
+    : catalog.workingHours;
   const calendar = {
     salonKey: catalog.id,
-    hours: catalog.workingHours,
+    hours,
     googleCalendarId: catalog.googleCalendarId,
+    staffMemberId: member?.id,
+    staffName: member?.name,
   };
 
   if (name === "checkAvailability") {
@@ -109,7 +160,16 @@ export async function executeTool(
       Number(args.durationMinutes),
       calendar,
     );
-    return { date: args.date, slots: slots.slice(0, 12) };
+    if (!member) {
+      return { date: args.date, slots: slots.slice(0, 12) };
+    }
+    const worksThatDay = Boolean(hours[weekdayInSalon(String(args.date))]);
+    return {
+      date: args.date,
+      staffName: member.name,
+      staffWorksThatDay: worksThatDay,
+      slots: slots.slice(0, 12),
+    };
   }
 
   if (name === "createAppointment") {
@@ -153,6 +213,13 @@ export async function runOpenAIAgent(
     messages.push({
       role: "system",
       content: `Tarih: ${resolvedDate} (${formatHumanSalonDate(resolvedDate)}). checkAvailability date bunu kullan.`,
+    });
+  }
+  const requestedStaff = findStaffInText(userMessage, catalog.staff);
+  if (requestedStaff) {
+    messages.push({
+      role: "system",
+      content: `Müşteri personel seçti: ${JSON.stringify(requestedStaff.name)}. checkAvailability ve createAppointment çağrılarında staffName olarak bunu kullan.`,
     });
   }
 

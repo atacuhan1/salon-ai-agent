@@ -1,6 +1,7 @@
 import type { WorkingHours } from "@/lib/types";
 import { SLOT_STEP_MINUTES, workingHours as defaultHours } from "@/prompts/salon-rules";
 import {
+  formatSalonDate,
   formatSalonTime,
   salonDateTime,
   weekdayInSalon,
@@ -52,4 +53,18 @@ export function generateAvailableSlots(
   }
 
   return slots;
+}
+
+/** True when [start, end) lies fully inside the open hours of start's salon-local day. */
+export function fitsWorkingHours(
+  start: Date,
+  end: Date,
+  hoursByDay: WorkingHours,
+): boolean {
+  const date = formatSalonDate(start);
+  const hours = hoursByDay[weekdayInSalon(date)];
+  if (!hours) {
+    return false;
+  }
+  return start >= salonDateTime(date, hours.open) && end <= salonDateTime(date, hours.close);
 }

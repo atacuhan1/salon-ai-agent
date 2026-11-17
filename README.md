@@ -13,6 +13,7 @@ Salon owners manage services, prices, staff, and hours in a panel. When the tria
 - Salon register / login (`/kayit`, `/giris`) with email one-time code + 14-day trial
 - Owner panel: services, staff, hours, profile, today’s appointments
 - Web chat (`/s/<slug>`, `/demo`) with availability checks and booking
+- Book with a specific staff member: slots follow that person’s days and hours; panel shows who was chosen
 - Subscription lock when access expires (web `402`; WhatsApp lock message)
 - WhatsApp webhook verify + signature checks (fail-closed); `phone_number_id` → salon mapping
 - Appointments stored in Postgres; optional Google Calendar when credentials + Calendar ID are set
@@ -25,7 +26,7 @@ Timezone everywhere: `Europe/Istanbul` (UTC+3).
 - **Email OTP:** code path uses Resend (`RESEND_API_KEY`, `EMAIL_FROM`). Without those env vars on Vercel, register/login return a clear error and no session is issued
 - **WhatsApp end-to-end:** code and production callback URL are ready; real-line testing needs Meta credentials (`WHATSAPP_*`) configured by the owner
 - **Payments:** no Stripe/iyzico yet — panel “simulate payment” only in development (or `BILLING_SIMULATION=1`); production returns 403
-- Book by specific staff, cancel/reschedule, WhatsApp reminders, and a super-admin view are not built yet
+- Parallel bookings across staff (salon still takes one appointment at a time), cancel/reschedule, WhatsApp reminders, and a super-admin view are not built yet
 
 More detail: [TODO.md](TODO.md).
 

@@ -4,7 +4,12 @@ import { prisma } from "@/lib/db";
 import { DEMO_SALON_KEY } from "@/lib/salon-catalog";
 import { getEnv, hasGoogleServiceAccount } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { generateAvailableSlots, overlaps, type BusyInterval } from "@/lib/slots";
+import {
+  fitsWorkingHours,
+  generateAvailableSlots,
+  overlaps,
+  type BusyInterval,
+} from "@/lib/slots";
 import {
   formatSalonDate,
   formatSalonDateTime,
@@ -35,6 +40,13 @@ export type CalendarOptions = {
   hours?: WorkingHours;
   /** Per-salon Google Calendar ID. Required to write/read Google for that salon. */
   googleCalendarId?: string;
+  /**
+   * Staff member chosen by the customer. Must come from this salon's catalog
+   * (never from raw client input); `hours` should then be that staff member's hours.
+   */
+  staffMemberId?: string;
+  /** Display name of the chosen staff member (for the Google Calendar event). */
+  staffName?: string;
 };
 
 const memoryBusyBySalon = new Map<string, BusyInterval[]>();
@@ -234,6 +246,23 @@ export async function createAppointment(
   const end = new Date(start.getTime() + input.durationMinutes * 60 * 1000);
   const date = formatSalonDate(start);
 
+  if (options.hours && !fitsWorkingHours(start, end, options.hours)) {
+    logger.warn("Appointment rejected because it is outside working hours", {
+      start: formatSalonDateTime(start),
+      salonKey,
+      staffSelected: Boolean(options.staffMemberId),
+    });
+    return {
+      success: false,
+      startDateTime: formatSalonDateTime(start),
+      endDateTime: formatSalonDateTime(end),
+      reason: "outside_hours",
+      message: options.staffMemberId
+        ? "Seçilen personel bu saatte çalışmıyor. Lütfen checkAvailability ile uygun bir saat seçin."
+        : "Bu saat çalışma saatleri dışında. Lütfen checkAvailability ile uygun bir saat seçin.",
+    };
+  }
+
   try {
     const { busy } = await listBusyForSalon(date, salonKey, options);
     const conflict = busy.some((interval) => overlaps({ start, end }, interval));
@@ -246,6 +275,7 @@ export async function createAppointment(
         success: false,
         startDateTime: formatSalonDateTime(start),
         endDateTime: formatSalonDateTime(end),
+        reason: "conflict",
         message: "Bu saat dolu. Lütfen checkAvailability ile başka bir saat seçin.",
       };
     }
@@ -260,8 +290,12 @@ export async function createAppointment(
       const response = await calendar.events.insert({
         calendarId: googleId,
         requestBody: {
-          summary: `${input.serviceName} — ${input.customerName}`,
-          description: `Telefon: ${input.customerPhone}\nHizmet: ${input.serviceName}\nSalon: ${salonKey}`,
+          summary: options.staffName
+            ? `${input.serviceName} — ${input.customerName} (${options.staffName})`
+            : `${input.serviceName} — ${input.customerName}`,
+          description: `Telefon: ${input.customerPhone}\nHizmet: ${input.serviceName}${
+            options.staffName ? `\nPersonel: ${options.staffName}` : ""
+          }\nSalon: ${salonKey}`,
           start: {
             dateTime: toIsoInSalon(start),
             timeZone: env.SALON_TIMEZONE,
@@ -290,6 +324,7 @@ export async function createAppointment(
           startAt: start,
           endAt: end,
           googleEventId,
+          staffMemberId: options.staffMemberId ?? null,
         },
       });
       logger.info("Created persisted appointment", {
@@ -339,11 +374,12 @@ export async function listAppointmentsForDay(
     serviceName: string;
     startAt: Date;
     endAt: Date;
+    staffName: string | null;
   }>
 > {
   const dayStart = salonDateTime(date, "00:00");
   const dayEnd = salonDateTime(date, "23:59");
-  return prisma.appointment.findMany({
+  const rows = await prisma.appointment.findMany({
     where: {
       salonId,
       startAt: { gte: dayStart, lte: dayEnd },
@@ -356,8 +392,14 @@ export async function listAppointmentsForDay(
       serviceName: true,
       startAt: true,
       endAt: true,
+      staffMember: { select: { name: true, salonId: true } },
     },
   });
+  return rows.map(({ staffMember, ...row }) => ({
+    ...row,
+    // Defensive tenant check: only show a staff name that belongs to this salon.
+    staffName: staffMember && staffMember.salonId === salonId ? staffMember.name : null,
+  }));
 }
 
 export const calendarToolSchemas = {
