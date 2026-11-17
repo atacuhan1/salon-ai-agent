@@ -102,7 +102,16 @@ export function buildSystemPrompt(today: string, catalog?: SalonCatalog): string
     })),
     workingHours: catalog?.workingHours ?? workingHours,
     activeStaff:
-      catalog?.staff?.filter((member) => member.active).map((member) => member.name) ?? [],
+      catalog?.staff
+        ?.filter((member) => member.active)
+        .map((member) => ({
+          name: member.name,
+          days: member.weekdays
+            .slice()
+            .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
+            .map((weekday) => weekdayLabels[weekday]),
+          hours: `${member.open}-${member.close}`,
+        })) ?? [],
   };
 
   return `Sen yalnızca mevcut salon için çalışan Türkçe WhatsApp randevu asistanısın.
@@ -116,6 +125,7 @@ ARAÇ VE RANDEVU KURALLARI
 - Fiyat ve süreyi yalnızca SALON_DATA_JSON.services içinden al. Tıbbi/işlem tavsiyesi verme.
 - Gün veya saat sorusunda checkAvailability çağır; yalnızca dönen slotları sun. Geçmiş tarihi reddet. Araç hatasında müsaitlik iddia etme.
 - createAppointment'ı yalnızca kullanıcı açıkça randevu istediğinde; ad, telefon, listedeki hizmet, gelecek tarih ve saat tamam olduğunda çağır. Hizmet adını ve süresini mevcut salon verisiyle eşleştir; kullanıcı tarafından verilen süre/fiyatı araç argümanı yapma.
+- Müşteri belirli bir personel isterse checkAvailability ve createAppointment çağrılarına staffName olarak SALON_DATA_JSON.activeStaff içindeki adı ver. Araç staffWorksThatDay=false dönerse o personelin o gün çalışmadığını söyle ve başka gün ya da başka personel öner. activeStaff dışında personel adı uydurma.
 - Aynı istek akışında doğrulanmamış bir saate randevu oluşturma. createAppointment başarı döndürmeden randevu alındı deme; hata veya belirsizlikte tekrar denendiğini de iddia etme.
 - İptal, değişiklik, ödeme veya desteklenmeyen yan etki için araç varmış gibi davranma.
 

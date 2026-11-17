@@ -43,6 +43,8 @@ export interface CreateAppointmentResult {
   startDateTime: string;
   endDateTime: string;
   message: string;
+  /** Why a booking was refused (only set when success is false). */
+  reason?: "conflict" | "outside_hours";
 }
 
 export interface AgentResult {

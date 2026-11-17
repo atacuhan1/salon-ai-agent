@@ -88,3 +88,42 @@ test("whatsapp phone_number_id maps uniquely to salon", async () => {
     await prisma.salon.delete({ where: { id: salon.id } }).catch(() => undefined);
   }
 });
+
+test("appointment keeps chosen staff and survives staff deletion", async () => {
+  const stamp = Date.now();
+  const salon = await prisma.salon.create({
+    data: {
+      name: "Personel Test",
+      email: `staff-${stamp}@example.com`,
+      slug: `staff-${stamp}`,
+      passwordHash: "test-hash",
+      subscriptionStatus: SUBSCRIPTION_STATUS.trial,
+      trialEndsAt: new Date(Date.now() + 14 * 86_400_000),
+    },
+  });
+  const staff = await prisma.staffMember.create({
+    data: { salonId: salon.id, name: "Ayşe", weekdays: "[1]", openTime: "12:00", closeTime: "17:00" },
+  });
+
+  try {
+    const result = await createAppointment(
+      "Deniz",
+      "05550000009",
+      "Manikür",
+      "2027-03-15T12:00",
+      60,
+      { salonKey: salon.id, staffMemberId: staff.id, staffName: staff.name },
+    );
+    assert.equal(result.success, true);
+
+    const listed = await listAppointmentsForDay(salon.id, "2027-03-15");
+    assert.equal(listed[0]?.staffName, "Ayşe");
+
+    await prisma.staffMember.delete({ where: { id: staff.id } });
+    const afterDelete = await listAppointmentsForDay(salon.id, "2027-03-15");
+    assert.equal(afterDelete.length, 1);
+    assert.equal(afterDelete[0]?.staffName, null);
+  } finally {
+    await prisma.salon.delete({ where: { id: salon.id } }).catch(() => undefined);
+  }
+});

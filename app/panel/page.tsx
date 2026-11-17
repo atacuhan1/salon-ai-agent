@@ -49,10 +49,11 @@ export default async function PanelHomePage() {
             {appointments.map((row) => (
               <li
                 key={row.id}
-                className="grid gap-1 px-4 py-3 text-sm md:grid-cols-[5rem_1fr_1fr_10rem] md:items-center"
+                className="grid gap-1 px-4 py-3 text-sm md:grid-cols-[5rem_1fr_8rem_1fr_10rem] md:items-center"
               >
                 <span className="font-medium tabular-nums">{formatSalonTime(row.startAt)}</span>
                 <span>{row.serviceName}</span>
+                <span className="text-[#5a4144]">{row.staffName ?? "Fark etmez"}</span>
                 <span>{row.customerName}</span>
                 <span className="text-[#5a4144]">{row.customerPhone}</span>
               </li>
